@@ -3,11 +3,32 @@
 (load "@lib/misc.l")
 (load "lib/lang.l")
 
+(de mac ("VAL")
+  (cond
+  ((str? "VAL")
+    (let (tokz  '((s) (mapcar pack (split (chop s) ":")))
+          toks  (tokz "VAL")
+          nums  (mapcar hex toks)
+          expn  '((acc vl) (>> (- (* 8 (length acc))) vl))
+          shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))
+      (lang~foldl '((acc x) (| acc x)) 0 shft)))
+  ((num? "VAL")
+    (let  (nums (make
+                  (link (>> 40 (& "VAL" (hex "FF0000000000"))))
+                  (link (>> 32 (& "VAL" (hex "FF00000000"))))
+                  (link (>> 24 (& "VAL" (hex "FF000000"))))
+                  (link (>> 16 (& "VAL" (hex "FF0000"))))
+                  (link (>>  8 (& "VAL" (hex "FF00"))))
+                  (link        (& "VAL" (hex "FF"))))
+            toks (mapcar '((n) (pad 2 (hex n))) nums))
+      (glue ":" toks)))
+  (T NIL)))
+
 (de ipv4 ("VAL")
   (cond
   ((str? "VAL")
     (let (tokz  '((s) (mapcar pack (split (chop s) ".")))
-          toks  (tokenize "VAL")
+          toks  (tokz "VAL")
           nums  (mapcar format toks)
           expn  '((acc vl) (>> (- (* 8 (length acc))) vl))
           shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))

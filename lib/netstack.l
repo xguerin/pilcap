@@ -142,7 +142,7 @@
   ))
 
 (dm dump ()
-  (prinl "dst           : h" (hex (: _dst)))
+  (prinl "dst           : h" (hex (: _dst)) " (" (netutils~mac (: _dst)) ")")
   (prinl "src           : h" (hex (: _src)))
   (prinl "type          : h" (hex (: _type))))
 
