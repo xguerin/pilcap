@@ -14,11 +14,11 @@
           shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))
       (lang~foldl '((acc x) (| acc x)) 0 shft)))
   ((num? "VAL")
-    (let  (nums (make
+    (let (nums (make
                   (for N "LEN"
                     (let (qty (* 8 (- "LEN" N)))
                       (link (>> qty (& "VAL" (>> (- qty) 255)))))))
-            toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
+          toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
       (glue "SEP" toks)))
   (T NIL)))
 
