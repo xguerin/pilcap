@@ -20,5 +20,5 @@
                   (link        (& "VAL" (hex "FF"))))
             toks (mapcar format nums))
     (glue "." toks)))
-  (T nil)))
+  (T NIL)))
 
