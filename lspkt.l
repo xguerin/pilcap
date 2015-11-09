@@ -10,12 +10,7 @@
 
 # Helper functions
 
-(de dump (layer)
-  (prinl "[---- " (netstack~ident layer) " ----]")
-  (netstack~dump layer)
-  0)
-
-(de scanner (@op ghdr phdr)
+(de pcap-scanner (@op ghdr phdr)
   (curry (@op) (ghdr phdr)
     (prog
       (prinl "/---- SOP ----\\")
@@ -23,12 +18,17 @@
       (pcap~ffw (- (pcap~len phdr) (netstack~inspect @op)))
       (prinl "\\---- EOP ----/"))))
 
+(de netstack-inspector (layer)
+  (prinl "[---- " (netstack~ident layer) " ----]")
+  (netstack~dump layer)
+  0)
+
 # Main
 
 (load T)
 
 (if *pcapfile*
-  (pcap~foreach *pcapfile* (scanner 'dump))
+  (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector))
   (prinl "ERROR: -pcapfile must be set"))
 
 # Quit
