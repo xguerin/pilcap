@@ -1,45 +1,30 @@
 (symbols 'netutils 'pico)
+(local format-addr)
 
 (load "@lib/misc.l")
 (load "lib/lang.l")
 
-(de mac ("VAL")
+(de format-addr ("VAL" "LEN" "SEP" "FORMATTER" "PAD")
   (cond
   ((str? "VAL")
-    (let (tokz  '((s) (mapcar pack (split (chop s) ":")))
+    (let (tokz  '((s) (mapcar pack (split (chop s) "SEP")))
           toks  (tokz "VAL")
-          nums  (mapcar hex toks)
+          nums  (mapcar "FORMATTER" toks)
           expn  '((acc vl) (>> (- (* 8 (length acc))) vl))
           shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))
       (lang~foldl '((acc x) (| acc x)) 0 shft)))
   ((num? "VAL")
     (let  (nums (make
-                  (link (>> 40 (& "VAL" (hex "FF0000000000"))))
-                  (link (>> 32 (& "VAL" (hex "FF00000000"))))
-                  (link (>> 24 (& "VAL" (hex "FF000000"))))
-                  (link (>> 16 (& "VAL" (hex "FF0000"))))
-                  (link (>>  8 (& "VAL" (hex "FF00"))))
-                  (link        (& "VAL" (hex "FF"))))
-            toks (mapcar '((n) (pad 2 (hex n))) nums))
-      (glue ":" toks)))
+                  (for N "LEN"
+                    (let (qty (* 8 (- "LEN" N)))
+                      (link (>> qty (& "VAL" (>> (- qty) 255)))))))
+            toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
+      (glue "SEP" toks)))
   (T NIL)))
 
+(de mac ("VAL")
+  (format-addr "VAL" 6 ":" 'hex 2))
+
 (de ipv4 ("VAL")
-  (cond
-  ((str? "VAL")
-    (let (tokz  '((s) (mapcar pack (split (chop s) ".")))
-          toks  (tokz "VAL")
-          nums  (mapcar format toks)
-          expn  '((acc vl) (>> (- (* 8 (length acc))) vl))
-          shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))
-      (lang~foldl '((acc x) (| acc x)) 0 shft)))
-  ((num? "VAL")
-    (let  (nums (make
-                  (link (>> 24 (& "VAL" (hex "FF000000"))))
-                  (link (>> 16 (& "VAL" (hex "FF0000"))))
-                  (link (>>  8 (& "VAL" (hex "FF00"))))
-                  (link        (& "VAL" (hex "FF"))))
-            toks (mapcar format nums))
-    (glue "." toks)))
-  (T NIL)))
+  (format-addr "VAL" 4 "." 'format 3))
 
