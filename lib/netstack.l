@@ -2,134 +2,123 @@
 
 (load "@lib/misc.l")
 (load "lib/netutils.l")
+(load "lib/lang.l")
 
-# Payload layer
+# Layer class
 
-(class +Payload)
-
-(dm insp ("CB" "ACC")
-  ("CB" This "ACC") 0)
-
-(dm dump ())
-
-(dm ident ()  "PLD")
-(dm len ()    0)
-
-# UDP Layer
-
-(class +TCP)
+(class +Layer)
 
 (dm T ()
-  (=: _src      (rd 2))
-  (=: _dst      (rd 2))
-  (=: _seqnum   (rd 4))
-  (=: _acknum   (rd 4))
-  (=: _flags    (rd 2))
-  (=: _winsize  (rd 2))
-  (=: _chksum   (rd 2))
-  (=: _urgptr   (rd 2)))
-
-(dm insp ("CB" "ACC")
-  ("CB" This "ACC")
-  (case (: _type)
-    (T
-      (let (layer (new '(+Payload)))
-        (+ (insp layer "CB" "ACC") (len This))))
-  ))
+  (let (reader  '((e)
+                  (let (s   (car e)
+                        n   (name s)
+                        p   (cadr e))
+                    (put This s (rd p)))))
+    (mapc reader (schema This))))
 
 (dm dump ()
-	(prinl "src           : d"      (: _src))
-	(prinl "dst           : d"      (: _dst))
-	(prinl "seqnum        : d"      (: _seqnum))
-	(prinl "acknum        : d"      (: _acknum))
-	(prinl "flags         : h" (hex (: _flags)))
-	(prinl "winsize       : d"      (: _winsize))
-	(prinl "chksum        : d" (hex (: _chksum)))
-	(prinl "urgptr        : h" (hex (: _urgptr)))
-)
+  (let (writer  '((e)
+                  (let (s   (car e)
+                        n   (name s)
+                        p   (* 2 (cadr e))
+                        pfx (caddr e)
+                        fmt (cadddr e))
+                    (prinl "| " (align -14 n) " : " pfx (pad p (fmt (get This s)))))))
+    (mapc writer (schema This))))
 
-(dm ident ()  "TCP")
-(dm len ()    20)
+(dm len ()
+  (lang~foldl '((acc e) (+ acc (cadr e) )) 0 (schema This)))
+
+(dm ident ()
+  (pack (cdr (chop (name (car (type This)))))))
+
+(dm insp ("CB" "ACC")
+  (+ ("CB" This "ACC") (len This)))
+
+# TCP Layer
+
+(class +TCP +Layer)
+
+(dm schema ()
+  '((src      2 "h'"  hex)
+    (dst      2 "h'"  hex)
+    (seqnum   4 "d'"  format)
+    (acknum   4 "d'"  format)
+    (flags    2 "h'"  hex)
+    (winsize  2 "d'"  format)
+    (chksum   2 "h'"  hex)
+    (urgptr   2 "h'"  hex)))
+
+# UDP
+
+(class +UDP +Layer)
+
+(dm schema ()
+  '((src    2 "d'"  format)
+    (dst    2 "h'"  format)
+    (len    2 "h'"  format)
+    (chksum 2 "h'"  hex)))
 
 # IP Layer
 
-(class +IPv4)
+(class +IPv4 +Layer)
 
-(dm T ()
-	(=: _flags  (rd 2))
-	(=: _len 	  (rd 2))
-	(=: _ident	(rd 2))
-	(=: _frag	  (rd 2))
-	(=: _ttl 	  (rd 1))
-	(=: _proto	(rd 1))
-	(=: _chksum	(rd 2))
-	(=: _src	  (rd 4))
-	(=: _dst	  (rd 4))
-)
+(dm schema ()
+	'((flags  2 "h'" hex)
+	  (len 	  2 "d'" format)
+	  (ident  2 "h'" hex)
+	  (frag	  2 "h'" hex)
+	  (ttl 	  1 "h'" hex)
+	  (proto  1 "h'" hex)
+	  (chksum 2 "h'" hex)
+	  (src	  4 "h'" hex)
+	  (dst	  4 "h'" hex)))
 
 (dm insp ("CB" "ACC")
   ("CB" This "ACC")
-  (case (: _proto)
+  (case (: proto)
     (6
       (let (layer (new '(+TCP)))
         (+ (insp layer "CB" "ACC") (len This))))
+    (17
+      (let (layer (new '(+UDP)))
+        (+ (insp layer "CB" "ACC") (len This))))
     (T
-      (let (layer (new '(+Payload)))
+      (let (layer (new '(+Anonymous)))
         (+ (insp layer "CB" "ACC") (len This))))
   ))
-
-(dm dump ()
-	(prinl "flags         : h" (hex (: _flags)))
-	(prinl "len           : d"      (: _len))
-	(prinl "ident         : h" (hex (: _ident)))
-	(prinl "frag          : h" (hex (: _frag)))
-	(prinl "ttl           : h" (hex (: _ttl)))
-	(prinl "proto         : h" (hex (: _proto)))
-	(prinl "chksum        : h" (hex (: _chksum)))
-	(prinl "src           : h" (hex (: _src)) " (" (netutils~ipv4 (: _src)) ")")
-	(prinl "dst           : h" (hex (: _dst)) " (" (netutils~ipv4 (: _dst)) ")"))
-
-(dm ident ()  "IP4")
-(dm len ()    20)
 
 # VLAN layer
 
-(class +vLan)
+(class +vLan +Layer)
 
-(dm T ()
-  (=: _tci  (rd 2))
-  (=: _type (rd 2)))
+(dm schema ()
+  '((tci  2 "h'" hex)
+    (type 2 "h'" hex)))
 
 (dm insp ("CB" "ACC")
   ("CB" This "ACC")
-  (case (hex (: _type))
-    ("800"
+  (case (pad 4 (hex (: type)))
+    ("0800"
       (let (layer (new '(+IPv4)))
         (+ (insp layer "CB" "ACC") (len This))))
     (T
-      (let (layer (new '(+Payload)))
+      (let (layer (new '(+Anonymous)))
         (+ (insp layer "CB" "ACC") (len This))))
   ))
 
-(dm dump ()
-  (prinl "tci           : h" (hex (: _tci)))
-  (prinl "type          : h" (hex (: _type))))
-
-(dm ident ()  "VLN")
-(dm len ()    4)
-
 # Ethernet layer
 
-(class +Ethernet)
+(class +Ethernet +Layer)
 
-(dm T ()
-	(=: _dst  (rd 6))
-	(=: _src 	(rd 6))
-	(=: _type	(rd 2)))
+(dm schema ()
+	'((dst  6 "h'" hex)
+	  (src  6 "h'" hex)
+	  (type 2 "h'" hex)))
 
 (dm insp ("CB" "ACC")
   ("CB" This "ACC")
-  (case (hex (: _type))
+  (case (pad 4 (hex (: type)))
     ("0800"
       (let (layer (new '(+IPv4)))
         (+ (insp layer "CB" "ACC") (len This))))
@@ -137,17 +126,9 @@
       (let (layer (new '(+vLan)))
         (+ (insp layer "CB" "ACC") (len This))))
     (T
-      (let (layer (new '(+Payload)))
+      (let (layer (new '(+Anonymous)))
         (+ (insp layer "CB" "ACC") (len This))))
   ))
-
-(dm dump ()
-  (prinl "dst           : h" (hex (: _dst)) " (" (netutils~mac (: _dst)) ")")
-  (prinl "src           : h" (hex (: _src)))
-  (prinl "type          : h" (hex (: _type))))
-
-(dm ident ()  "ETH")
-(dm len ()    14)
 
 # Generic inspector
 
