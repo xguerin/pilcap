@@ -37,6 +37,7 @@
                         nam (name dsc)
                         wdh (* 2 len)
                         pfx (caddr e)
+                        fmt (cadddr e)
                         res (pack pfx (pad len (fmt (get This dsc)))))
                     (link (cons nam res)))))
       (make (lang~dolist builder (schema This)))
