@@ -11,12 +11,13 @@
     (prog
       (pcap~dump phdr)
       (prinl "/----------------[ SOP ]")
-      (pcap~ffw (- (pcap~len phdr) (car (netstack~inspect @op '@app '(0, NIL)))))
+      (pcap~ffw (- (pcap~len phdr) (car (netstack~packet-foldl @op '@app '(0, NIL)))))
       (prinl "\\----------------[ EOP ]"))))
 
 (de netstack-inspector ("LAYER" "ACC")
   (prinl "|----------------[ " (netstack~ident "LAYER") " ]")
-  (netstack~dump "LAYER"))
+  (netstack~dump "LAYER")
+  "ACC")
 
 # Global variables
 
@@ -36,8 +37,8 @@
 (load T)
 
 (if *pcapfile*
-  (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
-  (prinl "USAGE: print.l FILE.pcap"))
+    (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
+    (prinl "USAGE: print.l FILE.pcap"))
 
 # Quit
 
