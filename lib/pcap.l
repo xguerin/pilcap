@@ -30,13 +30,13 @@
           (and (: _magic) (: _major))))))))
 
 (dm dump ()
-  (prinl "magic   : x" (hex (: _magic)))
-  (prinl "major   : d" (: _major))
-  (prinl "minor   : d" (: _minor))
-  (prinl "zone    : d" (: _thiszone))
-  (prinl "sigfigs : d" (: _sigfigs))
-  (prinl "snaplen	: d" (: _snaplen))
-  (prinl "network	: d" (: _network))
+  (prinl "magic   : 0x" (hex (: _magic)))
+  (prinl "major   : "   (: _major))
+  (prinl "minor   : "   (: _minor))
+  (prinl "zone    : "   (: _thiszone))
+  (prinl "sigfigs : "   (: _sigfigs))
+  (prinl "snaplen	: "   (: _snaplen))
+  (prinl "network	: "   (: _network))
 )
 
 # Packet header definition
@@ -63,10 +63,10 @@
   (and (and (and (: _ts_nsec) (: _ts_nsec)) (: _incl_len)) (: _orig_len)))
 
 (dm dump ()
-  (prinl "seconds       : d" (: _ts_sec))
-  (prinl "nanoseconds   : d" (: _ts_nsec))
-  (prinl "included len  : d" (: _incl_len))
-  (prinl "original len  : d" (: _orig_len))
+  (prinl "seconds       : "   (: _ts_sec))
+  (prinl "nanoseconds   : "   (: _ts_nsec))
+  (prinl "included len  : "   (: _incl_len))
+  (prinl "original len  : "   (: _orig_len))
 )
 
 # Scanner

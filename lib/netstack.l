@@ -1,8 +1,8 @@
 (symbols 'netstack 'pico)
 
 (load "@lib/misc.l")
-(load "lib/netutils.l")
 (load "lib/lang.l")
+(load "lib/netutils.l")
 
 # Layer class
 
@@ -10,128 +10,151 @@
 
 (dm T ()
   (let (reader  '((e)
-                  (let (s   (car e)
-                        n   (name s)
-                        p   (cadr e))
-                    (put This s (rd p)))))
-    (mapc reader (schema This))))
+                  (let (len (car e)
+                        dsc (cadr e))
+                    (put This dsc (rd len))
+                )))
+    (lang~dolist reader (schema This))
+  ))
 
 (dm dump ()
   (let (writer  '((e)
-                  (let (s   (car e)
-                        n   (name s)
-                        p   (* 2 (cadr e))
+                  (let (len (car e)
+                        dsc (cadr e)
+                        nam (name dsc)
+                        wdh (* 2 len)
                         pfx (caddr e)
                         fmt (cadddr e))
-                    (prinl "| " (align -14 n) " : " pfx (pad p (fmt (get This s)))))))
-    (mapc writer (schema This))))
+                    (prinl "| " (align -14 nam) " : " pfx (pad wdh (fmt (get This dsc))))
+                )))
+    (lang~dolist writer (schema This))
+  ))
+
+(dm expand ()
+  (let (builder '((e)
+                  (let (len (car e)
+                        dsc (cadr e)
+                        nam (name dsc)
+                        wdh (* 2 len)
+                        pfx (caddr e)
+                        res (pack pfx (pad len (fmt (get This dsc)))))
+                    (link (cons nam res)))))
+      (make (lang~dolist builder (schema This)))
+  ))
 
 (dm len ()
-  (lang~foldl '((acc e) (+ acc (cadr e) )) 0 (schema This)))
+  (lang~foldl '((acc e) (+ acc (car e) )) 0 (schema This)))
 
 (dm ident ()
   (pack (cdr (chop (name (car (type This)))))))
 
-(dm insp ("CB" "ACC")
-  (+ ("CB" This "ACC") (len This)))
+(dm insp ("CB" "ACC" "APP")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt))
+      nac
+    ))
 
 # TCP Layer
 
 (class +TCP +Layer)
 
 (dm schema ()
-  '((src      2 "h'"  hex)
-    (dst      2 "h'"  hex)
-    (seqnum   4 "d'"  format)
-    (acknum   4 "d'"  format)
-    (flags    2 "h'"  hex)
-    (winsize  2 "d'"  format)
-    (chksum   2 "h'"  hex)
-    (urgptr   2 "h'"  hex)))
+  '((2  src     "0x"  hex)
+    (2  dst     "0x"  hex)
+    (4  seqnum  ""    format)
+    (4  acknum  ""    format)
+    (2  flags   "0x"  hex)
+    (2  winsize ""    format)
+    (2  chksum  "0x"  hex)
+    (2  urgptr  "0x"  hex)))
+
+(dm insp ("CB" "APP" "ACC")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt) )
+    nac))
 
 # UDP
 
 (class +UDP +Layer)
 
 (dm schema ()
-  '((src    2 "d'"  format)
-    (dst    2 "h'"  format)
-    (len    2 "h'"  format)
-    (chksum 2 "h'"  hex)))
+  '((2  src     ""    format)
+    (2  dst     ""    format)
+    (2  len     ""    format)
+    (2  chksum  "0x"  hex)))
+
+(dm insp ("CB" "APP" "ACC")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt) )
+    (if "APP"
+      (insp (new "APP") "CB" "ACC")
+      nac
+    )))
 
 # IP Layer
 
 (class +IPv4 +Layer)
 
 (dm schema ()
-	'((flags  2 "h'" hex)
-	  (len 	  2 "d'" format)
-	  (ident  2 "h'" hex)
-	  (frag	  2 "h'" hex)
-	  (ttl 	  1 "h'" hex)
-	  (proto  1 "h'" hex)
-	  (chksum 2 "h'" hex)
-	  (src	  4 "h'" hex)
-	  (dst	  4 "h'" hex)))
+	'((2  flags   "0x"  hex)
+    (2  len 	  ""    format)
+    (2  ident   "0x"  hex)
+    (2  frag	  "0x"  hex)
+    (1  ttl 	  "0x"  hex)
+    (1  proto   "0x"  hex)
+    (2  chksum  "0x"  hex)
+    (4  src	    "0x"  hex)
+    (4  dst	    "0x"  hex)))
 
-(dm insp ("CB" "ACC")
-  ("CB" This "ACC")
-  (case (: proto)
-    (6
-      (let (layer (new '(+TCP)))
-        (+ (insp layer "CB" "ACC") (len This))))
-    (17
-      (let (layer (new '(+UDP)))
-        (+ (insp layer "CB" "ACC") (len This))))
-    (T
-      (let (layer (new '(+Anonymous)))
-        (+ (insp layer "CB" "ACC") (len This))))
-  ))
+(dm insp ("CB" "APP" "ACC")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt) )
+    (case (: proto)
+      (6  (insp (new '(+TCP)) "CB" "APP" nac))
+      (17 (insp (new '(+UDP)) "CB" "APP" nac))
+  )))
 
 # VLAN layer
 
-(class +vLan +Layer)
+(class +Vlan +Layer)
 
 (dm schema ()
-  '((tci  2 "h'" hex)
-    (type 2 "h'" hex)))
+  '((2  tci   "0x"  hex)
+    (2  type  "0x"  hex)))
 
-(dm insp ("CB" "ACC")
-  ("CB" This "ACC")
-  (case (pad 4 (hex (: type)))
-    ("0800"
-      (let (layer (new '(+IPv4)))
-        (+ (insp layer "CB" "ACC") (len This))))
-    (T
-      (let (layer (new '(+Anonymous)))
-        (+ (insp layer "CB" "ACC") (len This))))
-  ))
+(dm insp ("CB" "APP" "ACC")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt) )
+    (case (pad 4 (hex (: type)))
+      ("0800" (insp (new '(+IPv4))  "CB" "APP" nac))
+      ("8100" (insp (new '(+Vlan))  "CB" "APP" nac))
+  )))
 
 # Ethernet layer
 
 (class +Ethernet +Layer)
 
 (dm schema ()
-	'((dst  6 "h'" hex)
-	  (src  6 "h'" hex)
-	  (type 2 "h'" hex)))
+	'((6  dst   "0x"  hex)
+    (6  src   "0x"  hex)
+    (2  type  "0x"  hex)))
 
-(dm insp ("CB" "ACC")
-  ("CB" This "ACC")
-  (case (pad 4 (hex (: type)))
-    ("0800"
-      (let (layer (new '(+IPv4)))
-        (+ (insp layer "CB" "ACC") (len This))))
-    ("8100"
-      (let (layer (new '(+vLan)))
-        (+ (insp layer "CB" "ACC") (len This))))
-    (T
-      (let (layer (new '(+Anonymous)))
-        (+ (insp layer "CB" "ACC") (len This))))
-  ))
+(dm insp ("CB" "APP" "ACC")
+  (let (nxt ("CB" This (cadr "ACC"))
+        sze (+ (car "ACC") (len This))
+        nac (list sze nxt) )
+    (case (pad 4 (hex (: type)))
+      ("0800" (insp (new '(+IPv4))  "CB" "APP" nac))
+      ("8100" (insp (new '(+Vlan))  "CB" "APP" nac))
+  )))
 
 # Generic inspector
 
-(de inspect ("CB" "ACC")
+(de inspect ("CB" "APP" "ACC")
   (let (layer (new '(+Ethernet)))
-    (insp layer "CB" "ACC")))
+    (insp layer "CB" "APP" "ACC")))
