@@ -16,9 +16,9 @@
     ((num? "VAL")
      (let (nums (make
                   (for N "LEN"
-                       (let (qty (* 8 (- "LEN" N)))
-                         (link (>> qty (& "VAL" (>> (- qty) 255)))))))
-                toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
+                    (let (qty (* 8 (- "LEN" N)))
+                      (link (>> qty (& "VAL" (>> (- qty) 255)))))))
+           toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
        (glue "SEP" toks)))
     (T NIL)))
 

@@ -1,4 +1,4 @@
-#!/usr/local/bin/picolisp /usr/local/lib/picolisp/lib.l
+#!/apps/infrafs1/xguerin/.local/picolisp/bin/picolisp /apps/infrafs1/xguerin/.local/picolisp/lib.l
 
 (load "@lib/misc.l")
 (load "@lib/json.l")
@@ -40,8 +40,8 @@
 (load T)
 
 (if *pcapfile*
-    (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
-    (prinl "USAGE: json.l FILE.pcap"))
+  (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
+  (prinl "USAGE: json.l FILE.pcap"))
 
 # Quit
 

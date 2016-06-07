@@ -1,7 +1,5 @@
 (symbols 'itch50 'netstack)
 
-(load "@lib/misc.l")
-
 # System event
 
 (class +Itch50SysEvent +Layer)

@@ -1,4 +1,4 @@
-#!/usr/local/bin/picolisp /usr/local/lib/picolisp/lib.l
+#!/apps/infrafs1/xguerin/.local/picolisp/bin/picolisp /apps/infrafs1/xguerin/.local/picolisp/lib.l
 
 (load "@lib/misc.l")
 (load "lib/pcap.l")
@@ -9,14 +9,14 @@
 (de pcap-scanner (@op @app ghdr phdr)
   (curry (@op @app) (ghdr phdr)
     (prog
-      (pcap~dump phdr)
+      (pcap~display phdr)
       (prinl "/----------------[ SOP ]")
       (pcap~ffw (- (pcap~len phdr) (car (netstack~packet-foldl @op '@app '(0, NIL)))))
       (prinl "\\----------------[ EOP ]"))))
 
 (de netstack-inspector ("LAYER" "ACC")
   (prinl "|----------------[ " (netstack~ident "LAYER") " ]")
-  (netstack~dump "LAYER")
+  (netstack~display "LAYER")
   "ACC")
 
 # Global variables
@@ -37,8 +37,8 @@
 (load T)
 
 (if *pcapfile*
-    (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
-    (prinl "USAGE: print.l FILE.pcap"))
+  (pcap~foreach *pcapfile* (pcap-scanner 'netstack-inspector *protocol*))
+  (prinl "USAGE: print.l FILE.pcap"))
 
 # Quit
 

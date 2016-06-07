@@ -1,19 +1,50 @@
-# vim: set ft=picolisp:
-
 (symbols 'lang 'pico)
 
-(de foldl (fun acc lst)
-  (if (not lst)
-      acc
-      (foldl fun (fun acc (car lst)) (cdr lst))))
+#
+# Basic maths
+#
 
-(de foldr (fun lst acc)
-  (if (not lst)
-      acc
-      (fun (car lst) (foldr fun (cdr lst) acc))))
+(de even ("VAL")
+  (= (% "VAL" 2) 0))
 
-(de dolist (fun lst)
-  (when lst
-        (fun (car lst))
-        (dolist fun (cdr lst))))
+(de odd ("VAL")
+  (<> (% "VAL" 2) 0))
 
+#
+# List manipulation
+#
+
+(de foldl ("FUN" "ACC" "LST")
+  (if (not "LST")
+    "ACC"
+    (foldl "FUN" ("FUN" "ACC" (car "LST")) (cdr "LST"))))
+
+(de foldr ("FUN" "LST" "ACC")
+  (if (not "LST")
+    "ACC"
+    ("FUN" (car "LST") (foldr "FUN" (cdr "LST") "ACC"))))
+
+(de dolist ("FUN" "LST")
+  (when "LST"
+    ("FUN" (car "LST"))
+    (dolist "FUN" (cdr "LST"))))
+
+(de tobytes ("LEN" "DAT")
+  (if (=0 "LEN")
+    NIL
+    (cons (& "DAT" 255) (tobytes (dec "LEN") (>> 8 "DAT")))
+    ))
+
+#
+# I/O operations
+#
+
+(de nwr @
+  (let ("WRITE" '((e)
+                  (let ((len dat) e
+                        blst (tobytes (abs len) dat)
+                        ilst (if (> len 0) (reverse blst) blst))
+                        (dolist '((e) (wr e)) ilst)
+                  )))
+    (while (args) ("WRITE" (next)))
+    ))
