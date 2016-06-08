@@ -49,10 +49,10 @@
   (=: orig_len 0))  # actual length of packet
 
 (dm schema ()
-  '((-4 ts_sec   "0x" hex)
-    (-4 ts_nsec  "0x" hex)
-    (-4 incl_len "0x" hex)
-    (-4 orig_len "0x" hex)))
+  '((-4 ts_sec   "" format)
+    (-4 ts_nsec  "" format)
+    (-4 incl_len "" format)
+    (-4 orig_len "" format)))
 
 (dm len ()
   (: incl_len))
@@ -65,12 +65,6 @@
 
 (dm valid? ()
   (and (and (and (: ts_nsec) (: ts_nsec)) (: incl_len)) (: orig_len)))
-
-(dm display ()
-  (prinl "seconds       : "   (: ts_sec))
-  (prinl "nanoseconds   : "   (: ts_nsec))
-  (prinl "included len  : "   (: incl_len))
-  (prinl "original len  : "   (: orig_len)))
 
 # Scanner
 

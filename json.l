@@ -10,9 +10,10 @@
 
 (de pcap-scanner (@op @app ghdr phdr)
   (curry (@op @app) (ghdr phdr)
-    (let (res (netstack~packet-foldr @op '@app '(0, NIL)))
-      (printJson (cadr res))
-      (pcap~ffw (- (pcap~len phdr) (car res)))
+    (let (acc       (list (pcap~len phdr) NIL)
+          (rem res) (netstack~packet-foldr @op '@app acc))
+      (printJson res)
+      (pcap~ffw rem)
       )))
 
 (de netstack-inspector ("LAYER" "ACC")

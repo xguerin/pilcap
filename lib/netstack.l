@@ -13,10 +13,10 @@
   (pack (cdr (chop (name (car (type This)))))))
 
 (dm foldl ("CB" "APP" "ACC")
-  (list (+ (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
+  (list (- (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
 
 (dm foldr ("CB" "APP" "ACC")
-  (list (+ (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
+  (list (- (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
 
 # TCP Layer
 
@@ -34,15 +34,19 @@
 
 (dm foldl ("CB" "APP" "ACC")
   (let (nxt ("CB" This (cadr "ACC"))
-        sze (+ (car "ACC") (len This))
+        sze (- (car "ACC") (len This))
         nac (list sze nxt) )
-    (if "APP" (foldl (serializable~parse (new "APP")) "CB" "APP" "ACC") nac)
-    ))
+    (if "APP"
+      (foldl (parse (new "APP")) "CB" "APP" nac)
+      nac
+      )))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (if "APP" (foldr (serializable~parse (new "APP")) "CB" "APP" "ACC") "ACC")
+  (let (fut (if "APP"
+              (foldr (parse (new "APP")) "CB" "APP" "ACC")
+              "ACC")
         nxt ("CB" This (cadr fut))
-        sze (+ (car fut) (len This)))
+        sze (- (car fut) (len This)))
     (list sze nxt)))
 
 # UDP
@@ -57,15 +61,19 @@
 
 (dm foldl ("CB" "APP" "ACC")
   (let (nxt ("CB" This (cadr "ACC"))
-        sze (+ (car "ACC") (len This))
+        sze (- (car "ACC") (len This))
         nac (list sze nxt) )
-    (if "APP" (foldl (serializable~parse (new "APP")) "CB" "APP" "ACC") nac)
-    ))
+    (if "APP" 
+      (foldl (parse (new "APP")) "CB" "APP" nac)
+      nac
+      )))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (if "APP" (foldr (serializable~parse (new "APP")) "CB" "APP" "ACC") "ACC")
+  (let (fut (if "APP"
+              (foldr (parse (new "APP")) "CB" "APP" "ACC")
+              "ACC")
         nxt ("CB" This (cadr fut))
-        sze (+ (car fut) (len This)))
+        sze (- (car fut) (len This)))
     (list sze nxt)))
 
 # IP Layer
@@ -80,26 +88,26 @@
     (1  ttl 	  "0x"  hex)
     (1  proto   "0x"  hex)
     (2  chksum  "0x"  hex)
-    (4  src	    "0x"  hex)
-    (4  dst	    "0x"  hex)))
+    (4  src	    "0x"  hex T)
+    (4  dst	    "0x"  hex T)))
 
 (dm foldl ("CB" "APP" "ACC")
   (let (nxt ("CB" This (cadr "ACC"))
-            sze (+ (car "ACC") (len This))
+            sze (- (car "ACC") (len This))
             nac (list sze nxt))
     (case (: proto)
-      (6  (foldl (serializable~parse (new '(+TCP))) "CB" "APP" nac))
-      (17 (foldl (serializable~parse (new '(+UDP))) "CB" "APP" nac))
+      (6  (foldl (parse (new '(+TCP))) "CB" "APP" nac))
+      (17 (foldl (parse (new '(+UDP))) "CB" "APP" nac))
       (T  nac)
       )))
 
 (dm foldr ("CB" "APP" "ACC")
   (let (fut (case (: proto)
-              (6  (foldr (serializable~parse (new '(+TCP))) "CB" "APP" "ACC"))
-              (17 (foldr (serializable~parse (new '(+UDP))) "CB" "APP" "ACC"))
+              (6  (foldr (parse (new '(+TCP))) "CB" "APP" "ACC"))
+              (17 (foldr (parse (new '(+UDP))) "CB" "APP" "ACC"))
               (T  "ACC"))
-            nxt ("CB" This (cadr fut))
-            sze (+ (car fut) (len This)))
+        nxt ("CB" This (cadr fut))
+        sze (- (car fut) (len This)))
     (list sze nxt)))
 
 # VLAN layer
@@ -112,21 +120,21 @@
 
 (dm foldl ("CB" "APP" "ACC")
   (let (nxt ("CB" This (cadr "ACC"))
-        sze (+ (car "ACC") (len This))
+        sze (- (car "ACC") (len This))
         nac (list sze nxt))
     (case (pad 4 (hex (: type)))
-      ("0800" (foldl (serializable~parse (new '(+IPv4))) "CB" "APP" nac))
-      ("8100" (foldl (serializable~parse (new '(+Vlan))) "CB" "APP" nac))
-      (T      nac)
+      ("0800" (foldl (parse (new '(+IPv4))) "CB" "APP" nac))
+      ("8100" (foldl (parse (new '(+Vlan))) "CB" "APP" nac))
+      (T    nac)
       )))
 
 (dm foldr ("CB" "APP" "ACC")
   (let (fut (case (pad 4 (hex (: type)))
-              ("0800" (foldr (serializable~parse (new '(+IPv4))) "CB" "APP" "ACC"))
-              ("8100" (foldr (serializable~parse (new '(+Vlan))) "CB" "APP" "ACC"))
-              (T      "ACC"))
-            nxt ("CB" This (cadr fut))
-            sze (+ (car fut) (len This)))
+              ("0800" (foldr (parse (new '(+IPv4))) "CB" "APP" "ACC"))
+              ("8100" (foldr (parse (new '(+Vlan))) "CB" "APP" "ACC"))
+              (T    "ACC"))
+        nxt ("CB" This (cadr fut))
+        sze (- (car fut) (len This)))
     (list sze nxt)))
 
 # Ethernet layer
@@ -134,36 +142,36 @@
 (class +Ethernet +Layer)
 
 (dm schema ()
-  '((6  dst   "0x"  hex)
-    (6  src   "0x"  hex)
+  '((6  dst   "0x"  hex T)
+    (6  src   "0x"  hex T)
     (2  type  "0x"  hex)))
 
 (dm foldl ("CB" "APP" "ACC")
   (let (nxt ("CB" This (cadr "ACC"))
-        sze (+ (car "ACC") (len This))
+        sze (- (car "ACC") (len This))
         nac (list sze nxt))
     (case (pad 4 (hex (: type)))
-      ("0800" (foldl (serializable~parse (new '(+IPv4))) "CB" "APP" nac))
-      ("8100" (foldl (serializable~parse (new '(+Vlan))) "CB" "APP" nac))
-      (T      nac)
+      ("0800" (foldl (parse (new '(+IPv4))) "CB" "APP" nac))
+      ("8100" (foldl (parse (new '(+Vlan))) "CB" "APP" nac))
+      (T    nac)
       )))
 
 (dm foldr ("CB" "APP" "ACC")
   (let (fut (case (pad 4 (hex (: type)))
-              ("0800" (foldr (serializable~parse (new '(+IPv4))) "CB" "APP" "ACC"))
-              ("8100" (foldr (serializable~parse (new '(+Vlan))) "CB" "APP" "ACC"))
-              (T      "ACC"))
+              ("0800" (foldr (parse (new '(+IPv4))) "CB" "APP" "ACC"))
+              ("8100" (foldr (parse (new '(+Vlan))) "CB" "APP" "ACC"))
+              (T    "ACC"))
         nxt ("CB" This (cadr fut))
-        sze (+ (car fut) (len This)))
+        sze (- (car fut) (len This)))
     (list sze nxt)))
 
 # Generic inspector
 
 (de packet-foldl ("CB" "APP" "ACC")
-  (let (layer (serializable~parse (new '(+Ethernet))))
+  (let (layer (parse (new '(+Ethernet))))
     (foldl layer "CB" "APP" "ACC")))
 
 (de packet-foldr ("CB" "APP" "ACC")
-  (let (layer (serializable~parse (new '(+Ethernet))))
+  (let (layer (parse (new '(+Ethernet))))
     (foldr layer "CB" "APP" "ACC")))
 

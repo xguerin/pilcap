@@ -8,14 +8,17 @@
 
 (de pcap-scanner (@op @app ghdr phdr)
   (curry (@op @app) (ghdr phdr)
-    (prog
-      (pcap~display phdr)
-      (prinl "/----------------[ SOP ]")
-      (pcap~ffw (- (pcap~len phdr) (car (netstack~packet-foldl @op '@app '(0, NIL)))))
-      (prinl "\\----------------[ EOP ]"))))
+    (prinl "/------------------------[ HDR ]")
+    (pcap~display phdr)
+    (prinl "\\------------------------[ HDR ]")
+    (prinl "/------------------------[ SOP ]")
+    (let (acc       (list (pcap~len phdr) NIL)
+          (rem res) (netstack~packet-foldl @op '@app acc))
+      (pcap~ffw rem)
+      (prinl "\\------------------------[ EOP ]"))))
 
 (de netstack-inspector ("LAYER" "ACC")
-  (prinl "|----------------[ " (netstack~ident "LAYER") " ]")
+  (prinl "|------------------------[ " (netstack~ident "LAYER") " ]")
   (netstack~display "LAYER")
   "ACC")
 
@@ -32,7 +35,8 @@
 (de protocol ()
   (let (proto (name (opt)))
     (load (pack "protocol/" proto ".l"))
-    (setq *protocol* ((car (str "itch50~entrypoint"))))))
+    (setq *protocol* ((car (str (pack proto "~entrypoint")))))
+    ))
 
 (load T)
 
