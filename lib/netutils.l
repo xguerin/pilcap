@@ -1,7 +1,6 @@
 (symbols 'netutils 'pico)
 (local format-addr)
 
-(load "@lib/misc.l")
 (load "lib/lang.l")
 
 (de format-addr ("VAL" "LEN" "SEP" "FORMATTER" "PAD")

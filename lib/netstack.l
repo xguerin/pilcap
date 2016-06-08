@@ -3,7 +3,6 @@
 #
 (symbols 'netstack 'serializable)
 
-(load "@lib/misc.l")
 (load "lib/netutils.l")
 
 # Layer class

@@ -3,21 +3,11 @@
 #
 (symbols 'pcap 'serializable)
 
-(load "@lib/misc.l")
-
 # Global header definition
 
 (class +GlobalHeader +Serializable)
 
-(dm T ("NS" "MAJOR" "MINOR" "ZONE" "SIG" "SNAPLEN" "NET")
-  (default
-    "NS"        T
-    "MAJOR"     2
-    "MINOR"     4
-    "ZONE"      0
-    "SIG"       0
-    "SNAPLEN"   65535
-    "NET"       1)
+(dm T ()
   (=: magic     0)
   (=: major     0)
   (=: minor     0)

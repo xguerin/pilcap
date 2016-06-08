@@ -1,13 +1,12 @@
-#!/apps/infrafs1/xguerin/.local/picolisp/bin/picolisp /apps/infrafs1/xguerin/.local/picolisp/lib.l
+#!/usr/bin/env pil
 
-(load "@lib/misc.l")
 (load "lib/serializable.l")
 (load "lib/pcap.l")
 (load "lib/netstack.l")
 
 # Helper functions
 
-(setq *doglobalhdr*  T)
+(setq *doglobalhdr* T)
 
 (de pcap-scanner (@op @app @output ghdr phdr)
   (curry (@op @app @output) (ghdr phdr)
