@@ -60,6 +60,20 @@
     nac
     ))
 
+(dm foldr ("CB" "APP" "ACC")
+  (let ((ilen idat) "ACC"
+        tmp         "ACC"
+        rls         NIL)
+    (do (: num_in_group)
+      (let ((len res) (foldr (parse (new (: entry_class) (: blk_len))) "CB" "APP" tmp))
+        (setq tmp (list len idat))
+        (setq rls (conc rls (list (cdar res))))
+        ))
+    (let (nxt ("CB" This (list (cons "entries" (cons T rls))))
+          sze (- (car tmp) (len This)))
+      (list sze nxt)
+      )))
+
 ################################################################################
 # Group layer class
 ################################################################################
@@ -84,6 +98,14 @@
         sze (- (car "ACC") (len This))
         nac (list sze nxt))
     (foldl (parse (new '(+GroupHeader) (list (: entry_class)))) "CB" "APP" nac)
+    ))
+
+(dm foldr ("CB" "APP" "ACC")
+  (let (message     (parse (new '(+GroupHeader) (list (: entry_class))))
+        (rlen rdat) (foldr message "CB" "APP" "ACC")
+        nxt         ("CB" This rdat)
+        sze         (- rlen (len This)))
+    (list sze nxt)
     ))
 
 ################################################################################
@@ -262,28 +284,39 @@
 (dm msg_size ()
   (: msg_size))
 
+(dm get_message_type ()
+  (case (: template_id)
+    (4  '(+ChannelReset))
+    (30 '(+SecurityStatus))
+    (32 '(+RefreshBook))
+    (33 '(+RefreshDailyStatistics))
+    (34 '(+RefreshLimitsBanding))
+    (35 '(+RefreshSessionStatistics))
+    (36 '(+RefreshTrade))
+    (37 '(+RefreshVolume))
+    (42 '(+RefreshTradeSummary))
+    (T  NIL)
+    ))
+
 (dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
-    (case (: template_id)
-      #
-      # Build the message according to its template ID
-      #
-      (4  (foldl (parse (new '(+ChannelReset)             (: blk_len))) "CB" "APP" nac))
-      (30 (foldl (parse (new '(+SecurityStatus)           (: blk_len))) "CB" "APP" nac))
-      (32 (foldl (parse (new '(+RefreshBook)              (: blk_len))) "CB" "APP" nac))
-      (33 (foldl (parse (new '(+RefreshDailyStatistics)   (: blk_len))) "CB" "APP" nac))
-      (34 (foldl (parse (new '(+RefreshLimitsBanding)     (: blk_len))) "CB" "APP" nac))
-      (35 (foldl (parse (new '(+RefreshSessionStatistics) (: blk_len))) "CB" "APP" nac))
-      (36 (foldl (parse (new '(+RefreshTrade)             (: blk_len))) "CB" "APP" nac))
-      (37 (foldl (parse (new '(+RefreshVolume)            (: blk_len))) "CB" "APP" nac))
-      (42 (foldl (parse (new '(+RefreshTradeSummary)      (: blk_len))) "CB" "APP" nac))
-      #
-      # By default, fast-forward
-      #
-      (T  nac)
-    )))
+  (let (nxt     ("CB" This (cadr "ACC"))
+        sze     (- (car "ACC") (len This))
+        nac     (list sze nxt)
+        message (get_message_type This))
+    (if message
+      (foldl (parse (new message (: blk_len))) "CB" "APP" nac)
+      nac)
+    ))
+
+(dm foldr ("CB" "APP" "ACC")
+  (let (message     (get_message_type This)
+        (rlen rdat) (if message
+                      (foldr (parse (new message (: blk_len))) "CB" "APP" "ACC")
+                    "   ACC")
+        nxt ("CB" This rdat)
+        sze (- rlen (len This)))
+    (list sze nxt)
+    ))
 
 ################################################################################
 # Packet header class
@@ -306,22 +339,27 @@
             (len res) (foldl message "CB" "APP" nac)
             delta     (- sze len)
             rem       (- (msg_size message) delta))
-        (prinl "sze: " sze " len: " len " delta: " delta " rem: " rem)
-        (when (> 0 rem) (bye))
-        (setq nac (list (- len rem) res))
+        (setq sze (- len rem))
+        (setq nac (list sze res))
         (rd rem)
         ))
     nac
     ))
 
-#
-# FIXME: we need to substract the size of the initial network layers
-#
 (dm foldr ("CB" "APP" "ACC")
-  (let (tmp "ACC")
+  (let ((ilen idat) "ACC"
+        tmp         "ACC"
+        rls         NIL)
     (while (> (car tmp) 10)
-      (setq tmp (foldr (parse (new '(+MessageHeader))) "CB" "APP" tmp)))
-    (let (nxt ("CB" This (cadr tmp))
+      (let (message     (parse (new '(+MessageHeader)))
+            (rlen rdat) (foldr message "CB" "APP" tmp)
+            delta       (- sze rlen)
+            rem         (- (msg_size message) delta))
+        (setq tmp (list (- rlen rem) idat))
+        (setq rls (conc rls (list (cdar rdat))))
+        (rd rem)
+        ))
+    (let (nxt ("CB" This (list (cons "messages" (cons T rls))))
           sze (- (car tmp) (len This)))
       (list sze nxt)
       )))

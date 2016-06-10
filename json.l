@@ -10,17 +10,16 @@
 
 (de pcap-scanner (@op @app ghdr phdr)
   (curry (@op @app) (ghdr phdr)
-    (let (acc       (list (pcap~len phdr) NIL)
-          (rem res) (netstack~packet-foldr @op '@app acc))
+    (let ((rem res) (netstack~packet-foldr @op '@app (pcap~len phdr) NIL))
       (printJson res)
       (pcap~ffw rem)
       )))
 
 (de netstack-inspector ("LAYER" "ACC")
-  (let (key (string~lower (netstack~ident "LAYER"))
+  (let (nam (string~lower (netstack~ident "LAYER"))
         sub (netstack~expand "LAYER")
-        cns (cons key sub))
-    (conc "ACC" (list cns))
+        cns (cons nam sub))
+    (list (if "ACC" (conc cns "ACC") cns))
     ))
 
 # Global variables
@@ -36,7 +35,8 @@
 (de protocol ()
   (let (proto (name (opt)))
     (load (pack "protocol/" proto ".l"))
-    (setq *protocol* ((car (str "itch50~entrypoint"))))))
+    (setq *protocol* ((car (str (pack proto "~entrypoint")))))
+    ))
 
 (load T)
 

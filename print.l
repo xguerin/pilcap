@@ -12,8 +12,7 @@
     (pcap~display phdr)
     (prinl "\\------------------------[ HDR ]")
     (prinl "/------------------------[ SOP ]")
-    (let (acc       (list (pcap~len phdr) NIL)
-          (rem res) (netstack~packet-foldl @op '@app acc))
+    (let ((rem res) (netstack~packet-foldl @op '@app (pcap~len phdr) NIL))
       (pcap~ffw rem)
       (prinl "\\------------------------[ EOP ]"))))
 

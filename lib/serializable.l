@@ -41,9 +41,10 @@
   (let (builder '((e)
                   (let ((len dsc pfx fmt pdd) e
                         nam (name dsc)
-                        wdh (* 2 len))
+                        wdh (abs (* 2 len)))
                     (default fmt hex)
-                    (let (res (pack pfx (pad len (fmt (get This dsc)))))
+                    (let (vll (fmt (get This dsc))
+                          res (pack pfx (if pdd (pad wdh vll) vll)))
                       (link (cons nam res))
                       ))
                   ))

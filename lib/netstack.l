@@ -5,7 +5,9 @@
 
 (load "lib/netutils.l")
 
+###############################################################################
 # Layer class
+###############################################################################
 
 (class +Layer +Serializable)
 
@@ -18,7 +20,9 @@
 (dm foldr ("CB" "APP" "ACC")
   (list (- (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
 
+###############################################################################
 # TCP Layer
+###############################################################################
 
 (class +TCP +Layer)
 
@@ -49,7 +53,9 @@
         sze (- (car fut) (len This)))
     (list sze nxt)))
 
-# UDP
+###############################################################################
+# UDP layer
+###############################################################################
 
 (class +UDP +Layer)
 
@@ -59,24 +65,52 @@
     (2  len     ""    format)
     (2  chksum  "0x"  hex)))
 
+(dm header_len () 8)
+
+(dm data_len ()
+  (- (: len) (header_len This)))
+
 (dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt) )
-    (if "APP" 
-      (foldl (parse (new "APP")) "CB" "APP" nac)
-      nac
-      )))
+  (let (res         ("CB" This (cadr "ACC"))
+        sze         (- (car "ACC") (len This))
+        #
+        # Replace the size of the upcoming data with the one specified by IP
+        #
+        nac         (list (data_len This) res)
+        #
+        # Then foldl the next data in line
+        #
+        (rlen rdat) (if "APP" (foldl (parse (new "APP")) "CB" "APP" nac) nac))
+    #
+    # Compute the remainder of data length and pass it as a result
+    #
+    (list (- sze (- (data_len This) rlen)) rdat)
+    ))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (if "APP"
-              (foldr (parse (new "APP")) "CB" "APP" "ACC")
-              "ACC")
-        nxt ("CB" This (cadr fut))
-        sze (- (car fut) (len This)))
-    (list sze nxt)))
+  (let ((ilen idat) "ACC"
+        #
+        # Replace the size of the upcoming data with the one specified by IP
+        #
+        nac         (list (data_len This) idat)
+        #
+        # Then foldr the next data in line
+        #
+        (rlen rdat) (if "APP" (foldr (parse (new "APP")) "CB" "APP" nac) nac)
+        #
+        # Call the callback on the result
+        #
+        res         ("CB" This rdat)
+        sze         (- ilen (len This)))
+    #
+    # Compute the remainder of data length and pass it as a result
+    #
+    (list (- sze (- (data_len This) rlen)) res)
+    ))
 
+###############################################################################
 # IP Layer
+###############################################################################
 
 (class +IPv4 +Layer)
 
@@ -91,53 +125,102 @@
     (4  src	    "0x"  hex T)
     (4  dst	    "0x"  hex T)))
 
+(dm ihl ()
+  (& (>> 8 (: flags)) 15))
+
+(dm header_len ()
+  (>> -2 (ihl This)))
+
+(dm data_len ()
+  (- (: len) (header_len This)))
+
+(dm ipv ()
+  (>> 4 (& (>> 8 (: flags)) 240)))
+
+(dm get_content_type ()
+  (case (: proto)
+    (6  '(+TCP))
+    (17 '(+UDP))
+    (T  NIL)
+    ))
+
 (dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-            sze (- (car "ACC") (len This))
-            nac (list sze nxt))
-    (case (: proto)
-      (6  (foldl (parse (new '(+TCP))) "CB" "APP" nac))
-      (17 (foldl (parse (new '(+UDP))) "CB" "APP" nac))
-      (T  nac)
-      )))
+  (let (res         ("CB" This (cadr "ACC"))
+        sze         (- (car "ACC") (len This))
+        content     (get_content_type This)
+        #
+        # Replace the size of the upcoming data with the one specified by IP
+        #
+        nac         (list (data_len This) res)
+        #
+        # Then foldl the next data in line
+        #
+        (rlen rdat) (if content (foldl (parse (new content)) "CB" "APP" nac) nac))
+    #
+    # Compute the remainder of data length and pass it as a result
+    #
+    (list (- sze (- (data_len This) rlen)) rdat)
+    ))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (case (: proto)
-              (6  (foldr (parse (new '(+TCP))) "CB" "APP" "ACC"))
-              (17 (foldr (parse (new '(+UDP))) "CB" "APP" "ACC"))
-              (T  "ACC"))
-        nxt ("CB" This (cadr fut))
-        sze (- (car fut) (len This)))
-    (list sze nxt)))
+  (let ((ilen idat) "ACC"
+        content     (get_content_type This)
+        #
+        # Replace the size of the upcoming data with the one specified by IP
+        #
+        nac         (list (data_len This) idat)
+        #
+        # Then foldr the next data in line
+        #
+        (rlen rdat) (if content (foldr (parse (new content)) "CB" "APP" nac) nac)
+        #
+        # Call the callback on the result
+        #
+        res         ("CB" This rdat)
+        sze         (- ilen (len This)))
+    #
+    # Compute the remainder of data length and pass it as a result
+    #
+    (list (- sze (- (data_len This) rlen)) res)
+    ))
 
+###############################################################################
 # VLAN layer
+###############################################################################
 
-(class +Vlan +Layer)
+(class +VLAN +Layer)
 
 (dm schema ()
   '((2  tci   "0x"  hex)
     (2  type  "0x"  hex)))
 
+(dm get_content_type ()
+  (case (pad 4 (hex (: type)))
+    ("0800" '(+IPv4))
+    ("8100" '(+VLAN))
+    (T    NIL)
+    ))
+
 (dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
-    (case (pad 4 (hex (: type)))
-      ("0800" (foldl (parse (new '(+IPv4))) "CB" "APP" nac))
-      ("8100" (foldl (parse (new '(+Vlan))) "CB" "APP" nac))
-      (T    nac)
-      )))
+  (let (nxt     ("CB" This (cadr "ACC"))
+        sze     (- (car "ACC") (len This))
+        nac     (list sze nxt)
+        content (get_content_type This))
+    (if content
+      (foldl (parse (new content)) "CB" "APP" nac)
+      nac)
+      ))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (case (pad 4 (hex (: type)))
-              ("0800" (foldr (parse (new '(+IPv4))) "CB" "APP" "ACC"))
-              ("8100" (foldr (parse (new '(+Vlan))) "CB" "APP" "ACC"))
-              (T    "ACC"))
-        nxt ("CB" This (cadr fut))
-        sze (- (car fut) (len This)))
+  (let (content (get_content_type This)
+        fut     (if content (foldr (parse (new content)) "CB" "APP" "ACC") "ACC")
+        nxt     ("CB" This (cadr fut))
+        sze     (- (car fut) (len This)))
     (list sze nxt)))
 
+###############################################################################
 # Ethernet layer
+###############################################################################
 
 (class +Ethernet +Layer)
 
@@ -146,32 +229,39 @@
     (6  src   "0x"  hex T)
     (2  type  "0x"  hex)))
 
+(dm get_content_type ()
+  (case (pad 4 (hex (: type)))
+    ("0800" '(+IPv4))
+    ("8100" '(+VLAN))
+    (T    NIL)
+    ))
+
 (dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
-    (case (pad 4 (hex (: type)))
-      ("0800" (foldl (parse (new '(+IPv4))) "CB" "APP" nac))
-      ("8100" (foldl (parse (new '(+Vlan))) "CB" "APP" nac))
-      (T    nac)
-      )))
+  (let (nxt     ("CB" This (cadr "ACC"))
+        sze     (- (car "ACC") (len This))
+        nac     (list sze nxt)
+        content (get_content_type This))
+    (if content
+      (foldl (parse (new content)) "CB" "APP" nac)
+      nac)
+      ))
 
 (dm foldr ("CB" "APP" "ACC")
-  (let (fut (case (pad 4 (hex (: type)))
-              ("0800" (foldr (parse (new '(+IPv4))) "CB" "APP" "ACC"))
-              ("8100" (foldr (parse (new '(+Vlan))) "CB" "APP" "ACC"))
-              (T    "ACC"))
-        nxt ("CB" This (cadr fut))
-        sze (- (car fut) (len This)))
+  (let (content (get_content_type This)
+        fut     (if content (foldr (parse (new content)) "CB" "APP" "ACC") "ACC")
+        nxt     ("CB" This (cadr fut))
+        sze     (- (car fut) (len This)))
     (list sze nxt)))
 
-# Generic inspector
+###############################################################################
+# Generic inspectors
+###############################################################################
 
-(de packet-foldl ("CB" "APP" "ACC")
+(de packet-foldl ("CB" "APP" "LEN" "ACC")
   (let (layer (parse (new '(+Ethernet))))
-    (foldl layer "CB" "APP" "ACC")))
+    (foldl layer "CB" "APP" (list "LEN" "ACC"))))
 
-(de packet-foldr ("CB" "APP" "ACC")
+(de packet-foldr ("CB" "APP" "LEN" "ACC")
   (let (layer (parse (new '(+Ethernet))))
-    (foldr layer "CB" "APP" "ACC")))
+    (foldr layer "CB" "APP" (list "LEN" "ACC"))))
 
