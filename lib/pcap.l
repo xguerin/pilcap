@@ -73,15 +73,19 @@
 
 (de foreach ("FILE" "CB" "ACC")
   (in "FILE"
-    (let (GHDR  (parse (new '(+GlobalHeader)))
-          PHDR  (parse (new '(+PacketHeader)))
-          cont  (valid? GHDR)
+    (let (GHDR  (new '(+GlobalHeader))
+          PHDR  (new '(+PacketHeader))
+          cont  NIL
           acc   "ACC")
+      (parse GHDR)
       (when (valid? GHDR)
+        (parse PHDR)
+        (setq cont (valid? PHDR))
         (while cont
           (setq
             acc   ("CB" GHDR PHDR acc)
-            PHDR  (parse (new '(+PacketHeader)))
-            cont  (valid? PHDR))
+            PHDR  (new '(+PacketHeader)))
+          (parse PHDR)
+          (setq cont (valid? PHDR))
           ))
       acc)))

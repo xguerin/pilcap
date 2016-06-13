@@ -1,23 +1,37 @@
 (symbols 'serializable 'pico)
 
 (load "lib/lang.l")
+(load "lib/printer.l")
 
+################################################################################
+# Schema entry format
+################################################################################
+
+#
+# ( BYTE_COUNT SYMBOL_NAME WRITER READER )
+# 
+
+################################################################################
 # Serializable class
+################################################################################
 
 (class +Serializable)
 
-(dm parse ()
-  (let (parser '((e)
-                 (let ((len dsc) e)
-                   (put This dsc (rd len))
+(dm parse ("LENGTH" "APP")
+  (let (schlen  (lang~foldl '((acc e) (+ acc (abs (car e)))) 0 (schema This))
+        rem     (- "LENGTH" schlen)
+        parser '((elt)
+                 (let ((len dsc NIL rdr) elt)
+                   (default rdr lang~identity)
+                   (put This dsc (rdr (rd len)))
                    )))
     (lang~dolist parser (schema This))
-    This
+    rem
     ))
 
 (dm dump ()
-  (let (getter '((e)
-                 (let ((len dsc pfx fmt pdd) e)
+  (let (getter '((elt)
+                 (let ((len dsc NIL NIL) elt)
                    (lang~nwr (list len (get This dsc)))
                    )))
     (lang~dolist getter (schema This))
@@ -25,36 +39,31 @@
     ))
 
 (dm display ()
-  (let (writer  '((e)
-                  (let ((len dsc pfx fmt pdd) e
-                        nam (name dsc)
-                        wdh (abs (* 2 len)))
-                    (default fmt hex)
-                    (if pdd
-                      (prinl "| " (align -22 nam) " : " pfx (pad wdh (fmt (get This dsc))))
-                      (prinl "| " (align -22 nam) " : " pfx (fmt (get This dsc))))
+  (let (writer  '((elt)
+                  (let ((len dsc wtr NIL) elt
+                        nam               (name dsc))
+                    (prinl (get This dsc))
+                    (prinl "| " (align -22 nam) " : " (wtr (get This dsc)))
                     )))
     (lang~dolist writer (schema This))
     ))
 
 (dm expand ()
   (let (builder '((e)
-                  (let ((len dsc pfx fmt pdd) e
-                        nam (name dsc)
-                        wdh (abs (* 2 len)))
-                    (default fmt hex)
-                    (let (vll (fmt (get This dsc))
-                          res (pack pfx (if pdd (pad wdh vll) vll)))
-                      (link (cons nam res))
-                      ))
-                  ))
+                  (let ((len dsc wtr NIL) elt
+                        nam               (name dsc)
+                        vll               (get This dsc))
+                      (link (cons nam (wtr vll)))
+                      )))
     (make (lang~dolist builder (schema This)))
     ))
 
 (dm len ()
   (lang~foldl '((acc e) (+ acc (abs (car e)))) 0 (schema This)))
 
+################################################################################
 # Schema validation
+################################################################################
 
 (de assert-size ("LAYER" "SIZE")
   (let (adder '((acc elm) (+ acc (abs (car elm))))

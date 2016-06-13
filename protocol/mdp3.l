@@ -14,7 +14,7 @@
 (class +ChannelReset +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 ################################################################################
@@ -51,28 +51,32 @@
 
 (assert-size '+GroupHeader 3)
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
+(dm parse ("LENGTH" "APP")
+  (let (rem (super "LENGTH" "APP"))
     (do (: num_in_group)
-      (setq nac (foldl (parse (new (: entry_class) (: blk_len))) "CB" "APP" nac)))
-    nac
+      (let (nxt (new (: entry_class) (: blk_len))
+                len (parse nxt rem "APP"))
+        (=: next> (cons nxt (: next>)))
+        (setq rem len)
+        ))
+    (rd rem)
+    0
     ))
 
-(dm foldr ("CB" "APP" "ACC")
-  (let ((ilen idat) "ACC"
-        tmp         "ACC"
-        rls         NIL)
-    (do (: num_in_group)
-      (let ((len res) (foldr (parse (new (: entry_class) (: blk_len))) "CB" "APP" tmp))
-        (setq tmp (list len idat))
-        (setq rls (conc rls (list (cdar res))))
-        ))
-    (let (nxt ("CB" This (list (cons "entries" (cons T rls))))
-          sze (- (car tmp) (len This)))
-      (list sze nxt)
-      )))
+(dm foldl ("FUN" "ACC")
+  (let (acc  ("FUN" "ACC" This)
+        insp '((acc elm)
+               (conc acc (foldl elm "FUN" NIL))
+               ))
+    (lang~foldl insp acc (: next>))
+    ))
+
+(dm foldr ("FUN" "ACC")
+  (let (insp  '((acc elm)
+                (cons (foldr elm "FUN" NIL) acc))
+        acc   (lang~foldl insp "ACC" (: next>)))
+    ("FUN" This acc)
+    ))
 
 ################################################################################
 # Group layer class
@@ -84,28 +88,14 @@
   (=: blk_len "BLK_LEN")
   (=: entry_class "ENTRY_CLASS"))
 
-(dm len ()
-  (: blk_len))
-
-(dm parse ()
-  (let (schema_len (lang~foldl '((acc e) (+ acc (abs (car e)))) 0 (schema This)))
-    (super)
-    (rd (- (: blk_len) schema_len)))
-  This)
-
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
-    (foldl (parse (new '(+GroupHeader) (list (: entry_class)))) "CB" "APP" nac)
-    ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let (message     (parse (new '(+GroupHeader) (list (: entry_class))))
-        (rlen rdat) (foldr message "CB" "APP" "ACC")
-        nxt         ("CB" This rdat)
-        sze         (- rlen (len This)))
-    (list sze nxt)
+(dm parse ("LENGTH" "APP")
+  (super "LENGTH" "APP")
+  (rd (- (: blk_len) (len This)))
+  (let (rem (- "LENGTH" (: blk_len))
+        nxt (new '(+GroupHeader) (list (: entry_class)))
+        len (parse nxt rem "APP"))
+    (=: next> nxt)
+    len
     ))
 
 ################################################################################
@@ -117,14 +107,13 @@
 (dm T ("BLK_LEN")
   (=: blk_len "BLK_LEN"))
 
-(dm len ()
-  (: blk_len))
-
-(dm parse ()
-  (let (schema_len (lang~foldl '((acc e) (+ acc (abs (car e)))) 0 (schema This)))
-    (super)
-    (rd (- (: blk_len) schema_len)))
-  This)
+(dm parse ("LENGTH" "APP")
+  (let (rem (super "LENGTH" "APP")
+        dlt (- "LENGTH" rem)
+        ext (- (: blk_len) dlt))
+    (rd ext)
+    (- rem ext)
+    ))
 
 ################################################################################
 # Refresh volume class
@@ -133,7 +122,7 @@
 (class +RefreshVolume +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshVolume 9)
@@ -145,7 +134,7 @@
 (class +RefreshBook +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshBook 9)
@@ -157,7 +146,7 @@
 (class +RefreshTrade +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshTrade 9)
@@ -183,14 +172,6 @@
 
 (assert-size '+RefreshDailyStatisticsEntry 25)
 
-(dm len ()
-  (: blk_len))
-
-(dm parse ()
-  (super)
-  (rd (- (: blk_len) 25))
-  This)
-
 ################################################################################
 # Refresh daily statistics class
 ################################################################################
@@ -201,7 +182,7 @@
   (super "BLK_LEN" '+RefreshDailyStatisticsEntry))
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshDailyStatistics 9)
@@ -213,7 +194,7 @@
 (class +RefreshSessionStatistics +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshSessionStatistics 9)
@@ -225,7 +206,7 @@
 (class +RefreshLimitsBanding +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshLimitsBanding 9)
@@ -260,7 +241,7 @@
   (super "BLK_LEN" '+RefreshTradeSummaryEntry))
 
 (dm schema ()
-  '((-8 transaction_time)
+  '((-8 transaction_time      NIL format)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshTradeSummary 9)
@@ -281,9 +262,6 @@
 
 (assert-size '+MessageHeader 10)
 
-(dm msg_size ()
-  (: msg_size))
-
 (dm get_message_type ()
   (case (: template_id)
     (4  '(+ChannelReset))
@@ -298,24 +276,23 @@
     (T  NIL)
     ))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt     ("CB" This (cadr "ACC"))
-        sze     (- (car "ACC") (len This))
-        nac     (list sze nxt)
+(dm parse ("LENGTH" "APP")
+  (let (rem     (super "LENGTH" "APP")
         message (get_message_type This))
     (if message
-      (foldl (parse (new message (: blk_len))) "CB" "APP" nac)
-      nac)
-    ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let (message     (get_message_type This)
-        (rlen rdat) (if message
-                      (foldr (parse (new message (: blk_len))) "CB" "APP" "ACC")
-                    "   ACC")
-        nxt ("CB" This rdat)
-        sze (- rlen (len This)))
-    (list sze nxt)
+      (let (nxt (new message (: blk_len))
+            len (parse nxt (- (: msg_size) 10) "APP")
+            dlt (- "LENGTH" len)
+            ext (- (: msg_size) dlt))
+        (=: next> nxt)
+        (rd ext)
+        (setq rem (- len ext)))
+      (let (dlt (- (: msg_size) (- "LENGTH" rem))
+            len (- rem dlt))
+        (rd dlt)
+        (setq rem len)
+        ))
+    rem
     ))
 
 ################################################################################
@@ -330,39 +307,32 @@
 
 (assert-size '+PacketHeader 12)
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt))
-    (while (> (car nac) 10)
-      (let (message   (parse (new '(+MessageHeader)))
-            (len res) (foldl message "CB" "APP" nac)
-            delta     (- sze len)
-            rem       (- (msg_size message) delta))
-        (setq sze (- len rem))
-        (setq nac (list sze res))
-        (rd rem)
+(dm parse ("LENGTH" "APP")
+  (let (rem (super "LENGTH" "APP"))
+    (while (>= rem (len '+MessageHeader))
+      (let (nxt (new '(+MessageHeader))
+            len (parse nxt rem "APP"))
+        (=: next> (cons nxt (: next>)))
+        (setq rem len)
         ))
-    nac
+    (rd rem)
+    0
+  ))
+
+(dm foldl ("FUN" "ACC")
+  (let (acc  ("FUN" "ACC" This)
+        insp '((acc elm)
+               (conc acc (foldl elm "FUN" NIL))
+               ))
+    (lang~foldl insp acc (: next>))
     ))
 
-(dm foldr ("CB" "APP" "ACC")
-  (let ((ilen idat) "ACC"
-        tmp         "ACC"
-        rls         NIL)
-    (while (> (car tmp) 10)
-      (let (message     (parse (new '(+MessageHeader)))
-            (rlen rdat) (foldr message "CB" "APP" tmp)
-            delta       (- sze rlen)
-            rem         (- (msg_size message) delta))
-        (setq tmp (list (- rlen rem) idat))
-        (setq rls (conc rls (list (cdar rdat))))
-        (rd rem)
-        ))
-    (let (nxt ("CB" This (list (cons "messages" (cons T rls))))
-          sze (- (car tmp) (len This)))
-      (list sze nxt)
-      )))
+(dm foldr ("FUN" "ACC")
+  (let (insp  '((acc elm)
+                (cons (foldr elm "FUN" NIL) acc))
+        acc   (lang~foldl insp "ACC" (: next>)))
+    ("FUN" This acc)
+    ))
 
 ################################################################################
 # Entry point

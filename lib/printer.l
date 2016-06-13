@@ -1,0 +1,15 @@
+(symbols 'printer 'pico)
+
+(de to_hex (@PADDING "VALUE")
+  (default @PADDING 0)
+  (curry (@PADDING) ("VALUE")
+    (when (num? "VALUE")
+      (pack "0x" (pad @PADDING (hex "VALUE")))
+      )))
+
+(de to_dec (@POINT "VALUE")
+  (default @POINT 0)
+  (curry (@POINT) ("VALUE")
+    (when (num? "VALUE")
+      (format "VALUE" @POINT)
+      )))

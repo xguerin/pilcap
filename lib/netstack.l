@@ -14,11 +14,19 @@
 (dm ident ()
   (pack (cdr (chop (name (car (type This)))))))
 
-(dm foldl ("CB" "APP" "ACC")
-  (list (- (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
+(dm foldl ("FUN" "ACC")
+  (let (acc ("FUN" "ACC" This))
+    (if (: next>)
+      (foldl (: next>) "FUN" acc)
+      acc)
+    ))
 
-(dm foldr ("CB" "APP" "ACC")
-  (list (- (car "ACC") (len This)) ("CB" This (cadr "ACC"))))
+(dm foldr ("FUN" "ACC")
+  (let (fut (if (: next>)
+              (foldr (: next>) "FUN" "ACC")
+              "ACC"))
+    ("FUN" This fut)
+    ))
 
 ###############################################################################
 # TCP Layer
@@ -27,31 +35,30 @@
 (class +TCP +Layer)
 
 (dm schema ()
-  '((2  src     "0x"  hex)
-    (2  dst     "0x"  hex)
-    (4  seqnum  ""    format)
-    (4  acknum  ""    format)
-    (2  flags   "0x"  hex)
-    (2  winsize ""    format)
-    (2  chksum  "0x"  hex)
-    (2  urgptr  "0x"  hex)))
+  '((2  src)
+    (2  dst)
+    (4  seqnum)
+    (4  acknum)
+    (2  flags   printer~to_hex)
+    (2  winsize)
+    (2  chksum  printer~to_hex)
+    (2  urgptr  printer~to_hex)))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt ("CB" This (cadr "ACC"))
-        sze (- (car "ACC") (len This))
-        nac (list sze nxt) )
-    (if "APP"
-      (foldl (parse (new "APP")) "CB" "APP" nac)
-      nac
-      )))
+(assert-size '+TCP 20)
 
-(dm foldr ("CB" "APP" "ACC")
-  (let (fut (if "APP"
-              (foldr (parse (new "APP")) "CB" "APP" "ACC")
-              "ACC")
-        nxt ("CB" This (cadr fut))
-        sze (- (car fut) (len This)))
-    (list sze nxt)))
+(dm header_len ()
+  (len This))
+
+(dm parse ("LENGTH" "APP")
+  (super "LENGTH" "APP")
+  (rd (- (header_len This) (len This)))
+  (let (rem (- "LENGTH" (header_len This)))
+    (when "APP"
+      (=: next> (new "APP"))
+      (setq rem (parse (: next>) rem "APP")))
+    (rd rem)
+    (- "LENGTH" (data_len This))
+    ))
 
 ###############################################################################
 # UDP layer
@@ -60,52 +67,28 @@
 (class +UDP +Layer)
 
 (dm schema ()
-  '((2  src     ""    format)
-    (2  dst     ""    format)
-    (2  len     ""    format)
-    (2  chksum  "0x"  hex)))
+  '((2  src)
+    (2  dst)
+    (2  len)
+    (2  chksum printer~to_hex)))
 
-(dm header_len () 8)
+(assert-size '+UDP 8)
+
+(dm header_len ()
+  (len This))
 
 (dm data_len ()
   (- (: len) (header_len This)))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (res         ("CB" This (cadr "ACC"))
-        sze         (- (car "ACC") (len This))
-        #
-        # Replace the size of the upcoming data with the one specified by IP
-        #
-        nac         (list (data_len This) res)
-        #
-        # Then foldl the next data in line
-        #
-        (rlen rdat) (if "APP" (foldl (parse (new "APP")) "CB" "APP" nac) nac))
-    #
-    # Compute the remainder of data length and pass it as a result
-    #
-    (list (- sze (- (data_len This) rlen)) rdat)
-    ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let ((ilen idat) "ACC"
-        #
-        # Replace the size of the upcoming data with the one specified by IP
-        #
-        nac         (list (data_len This) idat)
-        #
-        # Then foldr the next data in line
-        #
-        (rlen rdat) (if "APP" (foldr (parse (new "APP")) "CB" "APP" nac) nac)
-        #
-        # Call the callback on the result
-        #
-        res         ("CB" This rdat)
-        sze         (- ilen (len This)))
-    #
-    # Compute the remainder of data length and pass it as a result
-    #
-    (list (- sze (- (data_len This) rlen)) res)
+(dm parse ("LENGTH" "APP")
+  (super "LENGTH" "APP")
+  (rd (- (header_len This) (len This)))
+  (let (rem (data_len This))
+    (when "APP"
+      (=: next> (new "APP"))
+      (setq rem (parse (: next>) rem "APP")))
+    (rd rem)
+    (- "LENGTH" (: len))
     ))
 
 ###############################################################################
@@ -115,15 +98,17 @@
 (class +IPv4 +Layer)
 
 (dm schema ()
-  '((2  flags   "0x"  hex)
-    (2  len 	  ""    format)
-    (2  ident   "0x"  hex)
-    (2  frag	  "0x"  hex)
-    (1  ttl 	  "0x"  hex)
-    (1  proto   "0x"  hex)
-    (2  chksum  "0x"  hex)
-    (4  src	    "0x"  hex T)
-    (4  dst	    "0x"  hex T)))
+  '((2  flags)
+    (2  len)
+    (2  ident   printer~to_hex)
+    (2  frag    printer~to_hex)
+    (1  ttl)
+    (1  proto   printer~to_hex)
+    (2  chksum  printer~to_hex)
+    (4  src)
+    (4  dst)))
+
+(assert-size '+IPv4 20)
 
 (dm ihl ()
   (& (>> 8 (: flags)) 15))
@@ -144,44 +129,16 @@
     (T  NIL)
     ))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (res         ("CB" This (cadr "ACC"))
-        sze         (- (car "ACC") (len This))
-        content     (get_content_type This)
-        #
-        # Replace the size of the upcoming data with the one specified by IP
-        #
-        nac         (list (data_len This) res)
-        #
-        # Then foldl the next data in line
-        #
-        (rlen rdat) (if content (foldl (parse (new content)) "CB" "APP" nac) nac))
-    #
-    # Compute the remainder of data length and pass it as a result
-    #
-    (list (- sze (- (data_len This) rlen)) rdat)
-    ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let ((ilen idat) "ACC"
-        content     (get_content_type This)
-        #
-        # Replace the size of the upcoming data with the one specified by IP
-        #
-        nac         (list (data_len This) idat)
-        #
-        # Then foldr the next data in line
-        #
-        (rlen rdat) (if content (foldr (parse (new content)) "CB" "APP" nac) nac)
-        #
-        # Call the callback on the result
-        #
-        res         ("CB" This rdat)
-        sze         (- ilen (len This)))
-    #
-    # Compute the remainder of data length and pass it as a result
-    #
-    (list (- sze (- (data_len This) rlen)) res)
+(dm parse ("LENGTH" "APP")
+  (super "LENGTH" "APP")
+  (rd (- (header_len This) (len This)))
+  (let (rem     (data_len This)
+        content (get_content_type This))
+    (when content
+      (=: next> (new content))
+      (setq rem (parse (: next>) rem "APP")))
+    (rd rem)
+    (- "LENGTH" (: len))
     ))
 
 ###############################################################################
@@ -191,32 +148,26 @@
 (class +VLAN +Layer)
 
 (dm schema ()
-  '((2  tci   "0x"  hex)
-    (2  type  "0x"  hex)))
+  '((2  tci printer~to_hex)
+    (2  typ printer~to_hex)))
+
+(assert-size '+VLAN 4)
 
 (dm get_content_type ()
-  (case (pad 4 (hex (: type)))
+  (case (pad 4 (hex (: typ)))
     ("0800" '(+IPv4))
     ("8100" '(+VLAN))
-    (T    NIL)
+    (T      NIL)
     ))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt     ("CB" This (cadr "ACC"))
-        sze     (- (car "ACC") (len This))
-        nac     (list sze nxt)
+(dm parse ("LENGTH" "APP")
+  (let (rem     (super "LENGTH" "APP")
         content (get_content_type This))
-    (if content
-      (foldl (parse (new content)) "CB" "APP" nac)
-      nac)
-      ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let (content (get_content_type This)
-        fut     (if content (foldr (parse (new content)) "CB" "APP" "ACC") "ACC")
-        nxt     ("CB" This (cadr fut))
-        sze     (- (car fut) (len This)))
-    (list sze nxt)))
+    (when content
+      (=: next> (new content))
+      (setq rem (parse (: next>) rem "APP")))
+    rem
+    ))
 
 ###############################################################################
 # Ethernet layer
@@ -225,43 +176,43 @@
 (class +Ethernet +Layer)
 
 (dm schema ()
-  '((6  dst   "0x"  hex T)
-    (6  src   "0x"  hex T)
-    (2  type  "0x"  hex)))
+  '((6  dst)
+    (6  src)
+    (2  typ printer~to_hex)))
+
+(assert-size '+Ethernet 14)
 
 (dm get_content_type ()
-  (case (pad 4 (hex (: type)))
+  (case (pad 4 (hex (: typ)))
     ("0800" '(+IPv4))
     ("8100" '(+VLAN))
     (T    NIL)
     ))
 
-(dm foldl ("CB" "APP" "ACC")
-  (let (nxt     ("CB" This (cadr "ACC"))
-        sze     (- (car "ACC") (len This))
-        nac     (list sze nxt)
+(dm parse ("LENGTH" "APP")
+  (let (rem     (super "LENGTH" "APP")
         content (get_content_type This))
-    (if content
-      (foldl (parse (new content)) "CB" "APP" nac)
-      nac)
-      ))
-
-(dm foldr ("CB" "APP" "ACC")
-  (let (content (get_content_type This)
-        fut     (if content (foldr (parse (new content)) "CB" "APP" "ACC") "ACC")
-        nxt     ("CB" This (cadr fut))
-        sze     (- (car fut) (len This)))
-    (list sze nxt)))
+    (when content
+      (=: next> (new content))
+      (setq rem (parse (: next>) rem "APP")))
+    rem
+    ))
 
 ###############################################################################
 # Generic inspectors
 ###############################################################################
 
-(de packet-foldl ("CB" "APP" "LEN" "ACC")
-  (let (layer (parse (new '(+Ethernet))))
-    (foldl layer "CB" "APP" (list "LEN" "ACC"))))
+(de packet-foldl ("FUN" "LENGTH" "APP" "ACC")
+  (let (layer (new '(+Ethernet))
+        rem   (parse layer "LENGTH" "APP"))
+    (rd rem)
+    (foldl layer "FUN" "ACC")
+    ))
 
-(de packet-foldr ("CB" "APP" "LEN" "ACC")
-  (let (layer (parse (new '(+Ethernet))))
-    (foldr layer "CB" "APP" (list "LEN" "ACC"))))
+(de packet-foldr ("FUN" "LENGTH" "APP" "ACC")
+  (let (layer (new '(+Ethernet))
+        rem   (parse layer "LENGTH" "APP"))
+    (rd rem)
+    (foldr layer "FUN" "ACC")
+    ))
 

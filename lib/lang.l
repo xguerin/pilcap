@@ -36,6 +36,11 @@
     ))
 
 #
+# Various utilities
+
+(de identity ("VALUE") "VALUE")
+
+#
 # I/O operations
 #
 

@@ -5,21 +5,26 @@
 (load "lib/pcap.l")
 (load "lib/netstack.l")
 (load "lib/string.l")
+(load "lib/lang.l")
 
 # Helper functions
 
 (de pcap-scanner (@op @app ghdr phdr)
   (curry (@op @app) (ghdr phdr)
-    (let ((rem res) (netstack~packet-foldr @op '@app (pcap~len phdr) NIL))
+    (let (res (netstack~packet-foldr @op (pcap~len phdr) '@app NIL))
       (printJson res)
-      (pcap~ffw rem)
       )))
 
 (de netstack-inspector ("LAYER" "ACC")
   (let (nam (string~lower (netstack~ident "LAYER"))
         sub (netstack~expand "LAYER")
-        cns (cons nam sub))
-    (list (if "ACC" (conc cns "ACC") cns))
+        cns (cons nam sub)
+        cln '((acc elt)
+              (cons (cdar elt) acc))
+        nac (if (and "ACC" (not (str? (caar "ACC"))))
+              (list (cons "entries" (cons T (lang~foldl cln NIL "ACC"))))
+              "ACC"))
+    (list (if "ACC" (conc cns nac) cns))
     ))
 
 # Global variables
