@@ -58,12 +58,13 @@
 
 (dm parse ("LENGTH" "APP")
   (let (rem (super "LENGTH" "APP"))
-    (do (: num_in_group)
-      (let (nxt (new (: entry_class) (: blk_len))
-                len (parse nxt rem "APP"))
-        (=: next> (append (: next>) (list nxt)))
-        (setq rem len)
-        ))
+    (when (: entry_class)
+      (do (: num_in_group)
+        (let (nxt (new (: entry_class) (: blk_len))
+                  len (parse nxt rem "APP"))
+          (=: next> (append (: next>) (list nxt)))
+          (setq rem len)
+          )))
     (rd rem)
     0
     ))
@@ -97,7 +98,8 @@
   (super "LENGTH" "APP")
   (rd (- (: blk_len) (len This)))
   (let (rem (- "LENGTH" (: blk_len))
-        nxt (new '(+GroupHeader) (list (: entry_class)))
+        typ (if (: entry_class) (list (: entry_class)) NIL)
+        nxt (new '(+GroupHeader) typ)
         len (parse nxt rem "APP"))
     (=: next> nxt)
     len
@@ -124,7 +126,7 @@
 # Refresh volume class
 ################################################################################
 
-(class +RefreshVolume +Layer)
+(class +RefreshVolume +GroupLayer)
 
 (dm schema ()
   '((-8 transaction_time)
@@ -136,7 +138,7 @@
 # Refresh book class
 ################################################################################
 
-(class +RefreshBook +Layer)
+(class +RefreshBook +GroupLayer)
 
 (dm schema ()
   '((-8 transaction_time)
@@ -148,7 +150,7 @@
 # Refresh trade class
 ################################################################################
 
-(class +RefreshTrade +Layer)
+(class +RefreshTrade +GroupLayer)
 
 (dm schema ()
   '((-8 transaction_time)
@@ -196,7 +198,7 @@
 # Refresh session statistics class
 ################################################################################
 
-(class +RefreshSessionStatistics +Layer)
+(class +RefreshSessionStatistics +GroupLayer)
 
 (dm schema ()
   '((-8 transaction_time)
@@ -208,7 +210,7 @@
 # Refresh limits banding class
 ################################################################################
 
-(class +RefreshLimitsBanding +Layer)
+(class +RefreshLimitsBanding +GroupLayer)
 
 (dm schema ()
   '((-8 transaction_time)
@@ -281,21 +283,22 @@
     (T  NIL)
     ))
 
+#
+# "LENGTH" here is the length of the data in the full frame
+#
 (dm parse ("LENGTH" "APP")
   (let (rem     (super "LENGTH" "APP")
+        dln     (- (: msg_size) (len This))
         message (get_message_type This))
     (if message
       (let (nxt (new message (: blk_len))
-            len (parse nxt (- (: msg_size) 10) "APP")
-            dlt (- "LENGTH" len)
-            ext (- (: msg_size) dlt))
+            len (parse nxt dln "APP"))
         (=: next> nxt)
-        (rd ext)
-        (setq rem (- len ext)))
-      (let (dlt (- (: msg_size) (- "LENGTH" rem))
-            len (- rem dlt))
-        (rd dlt)
-        (setq rem len)
+        (rd len)
+        (setq rem (- rem dln)))
+      (prog
+        (rd dln)
+        (setq rem (- rem dln))
         ))
     rem
     ))
@@ -317,7 +320,7 @@
     (while (>= rem (len '+MessageHeader))
       (let (nxt (new '(+MessageHeader))
             len (parse nxt rem "APP"))
-        (=: next> (cons nxt (: next>)))
+        (=: next> (append (: next>) (list nxt)))
         (setq rem len)
         ))
     (rd rem)

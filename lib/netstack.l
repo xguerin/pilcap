@@ -105,8 +105,8 @@
     (1  ttl)
     (1  proto   `(printer~to_hex))
     (2  chksum  `(printer~to_hex))
-    (4  src)
-    (4  dst)))
+    (4  src     netutils~ipv4)
+    (4  dst     netutils~ipv4)))
 
 (assert-size '+IPv4 20)
 
@@ -176,8 +176,8 @@
 (class +Ethernet +Layer)
 
 (dm schema ()
-  '((6  dst)
-    (6  src)
+  '((6  dst netutils~mac)
+    (6  src netutils~mac)
     (2  typ `(printer~to_hex))))
 
 (assert-size '+Ethernet 14)
