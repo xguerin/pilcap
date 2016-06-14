@@ -42,17 +42,18 @@
   (let (writer  '((elt)
                   (let ((len dsc wtr NIL) elt
                         nam               (name dsc))
-                    (prinl (get This dsc))
+                    (default wtr lang~identity)
                     (prinl "| " (align -22 nam) " : " (wtr (get This dsc)))
                     )))
     (lang~dolist writer (schema This))
     ))
 
 (dm expand ()
-  (let (builder '((e)
+  (let (builder '((elt)
                   (let ((len dsc wtr NIL) elt
                         nam               (name dsc)
                         vll               (get This dsc))
+                      (default wtr lang~identity)
                       (link (cons nam (wtr vll)))
                       )))
     (make (lang~dolist builder (schema This)))

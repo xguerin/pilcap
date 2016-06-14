@@ -4,8 +4,13 @@
 # Utilities
 ################################################################################
 
-(de fpformat (value)
-    (format value 7))
+(de two_complement_reader (@BITS "VALUE")
+  (curry (@BITS) ("VALUE")
+    (cond
+      ((= "VALUE" (- (** 2 (- @BITS 1)) 1)) 0)
+      ((> "VALUE" (- (** 2 (- @BITS 1)) 1)) (- "VALUE" (** 2 @BITS)))
+      (T "VALUE")
+      )))
 
 ################################################################################
 # Channel reset class
@@ -14,7 +19,7 @@
 (class +ChannelReset +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 ################################################################################
@@ -46,8 +51,8 @@
   (=: entry_class "ENTRY_CLASS"))
 
 (dm schema ()
-  '((-2 blk_len       NIL format)
-    (-1 num_in_group  NIL format)))
+  '((-2 blk_len)
+    (-1 num_in_group)))
 
 (assert-size '+GroupHeader 3)
 
@@ -56,7 +61,7 @@
     (do (: num_in_group)
       (let (nxt (new (: entry_class) (: blk_len))
                 len (parse nxt rem "APP"))
-        (=: next> (cons nxt (: next>)))
+        (=: next> (append (: next>) (list nxt)))
         (setq rem len)
         ))
     (rd rem)
@@ -72,9 +77,9 @@
     ))
 
 (dm foldr ("FUN" "ACC")
-  (let (insp  '((acc elm)
+  (let (insp  '((elm acc)
                 (cons (foldr elm "FUN" NIL) acc))
-        acc   (lang~foldl insp "ACC" (: next>)))
+        acc   (lang~foldr insp (: next>) "ACC"))
     ("FUN" This acc)
     ))
 
@@ -122,7 +127,7 @@
 (class +RefreshVolume +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshVolume 9)
@@ -134,7 +139,7 @@
 (class +RefreshBook +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshBook 9)
@@ -146,7 +151,7 @@
 (class +RefreshTrade +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshTrade 9)
@@ -155,20 +160,20 @@
 # Refresh daily statistics entry class
 ################################################################################
 
-(class +RefreshDailyStatisticsEntry +Layer)
+(class +RefreshDailyStatisticsEntry +GroupEntryLayer)
 
 (dm T ("BLK_LEN")
   (=: blk_len "BLK_LEN"))
 
 (dm schema ()
-  '((-8 entry_price)
-    (-4 entry_size)
-    (-4 security_id       NIL format)
-    (-4 rpt_seq           NIL format)
-    (-2 trading_ref_date  NIL format)
-    (-1 settle_price_type NIL format)
-    (-1 update_action     NIL format)
-    (-1 entry_type        NIL format)))
+  '((-8 entry_price NIL `(two_complement_reader 64))
+    (-4 entry_size NIL `(two_complement_reader 32))
+    (-4 security_id)
+    (-4 rpt_seq)
+    (-2 trading_ref_date)
+    (-1 settle_price_type)
+    (-1 update_action)
+    (-1 entry_type NIL char)))
 
 (assert-size '+RefreshDailyStatisticsEntry 25)
 
@@ -182,7 +187,7 @@
   (super "BLK_LEN" '+RefreshDailyStatisticsEntry))
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshDailyStatistics 9)
@@ -194,7 +199,7 @@
 (class +RefreshSessionStatistics +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshSessionStatistics 9)
@@ -206,7 +211,7 @@
 (class +RefreshLimitsBanding +Layer)
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshLimitsBanding 9)
@@ -223,11 +228,11 @@
 (dm schema ()
   '((-8 entry_price)
     (-4 entry_size)
-    (-4 security_id       NIL format)
-    (-4 rpt_seq           NIL format)
-    (-4 number_of_orders  NIL format)
-    (-1 aggressor_side    NIL format)
-    (-1 update_action     NIL format)))
+    (-4 security_id)
+    (-4 rpt_seq)
+    (-4 number_of_orders)
+    (-1 aggressor_side)
+    (-1 update_action)))
 
 (assert-size '+RefreshTradeSummaryEntry 26)
 
@@ -241,7 +246,7 @@
   (super "BLK_LEN" '+RefreshTradeSummaryEntry))
 
 (dm schema ()
-  '((-8 transaction_time      NIL format)
+  '((-8 transaction_time)
     (-1 match_event_indicator)))
 
 (assert-size '+RefreshTradeSummary 9)
@@ -253,11 +258,11 @@
 (class +MessageHeader +Layer)
 
 (dm schema ()
-  '((-2 msg_size    NIL format)
-    (-2 blk_len     NIL format)
-    (-2 template_id NIL format)
-    (-2 schema_id   NIL format)
-    (-1 version     NIL format)
+  '((-2 msg_size)
+    (-2 blk_len)
+    (-2 template_id)
+    (-2 schema_id)
+    (-1 version)
     (-1 reserved)))
 
 (assert-size '+MessageHeader 10)
@@ -302,8 +307,8 @@
 (class +PacketHeader +Layer)
 
 (dm schema ()
-  '((-4  seqnum    NIL format)
-    (-8  timestamp NIL format)))
+  '((-4  seqnum)
+    (-8  timestamp)))
 
 (assert-size '+PacketHeader 12)
 

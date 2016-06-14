@@ -39,10 +39,10 @@
     (2  dst)
     (4  seqnum)
     (4  acknum)
-    (2  flags   printer~to_hex)
+    (2  flags   `(printer~to_hex))
     (2  winsize)
-    (2  chksum  printer~to_hex)
-    (2  urgptr  printer~to_hex)))
+    (2  chksum  `(printer~to_hex))
+    (2  urgptr  `(printer~to_hex))))
 
 (assert-size '+TCP 20)
 
@@ -70,7 +70,7 @@
   '((2  src)
     (2  dst)
     (2  len)
-    (2  chksum printer~to_hex)))
+    (2  chksum `(printer~to_hex))))
 
 (assert-size '+UDP 8)
 
@@ -100,11 +100,11 @@
 (dm schema ()
   '((2  flags)
     (2  len)
-    (2  ident   printer~to_hex)
-    (2  frag    printer~to_hex)
+    (2  ident   `(printer~to_hex))
+    (2  frag    `(printer~to_hex))
     (1  ttl)
-    (1  proto   printer~to_hex)
-    (2  chksum  printer~to_hex)
+    (1  proto   `(printer~to_hex))
+    (2  chksum  `(printer~to_hex))
     (4  src)
     (4  dst)))
 
@@ -148,8 +148,8 @@
 (class +VLAN +Layer)
 
 (dm schema ()
-  '((2  tci printer~to_hex)
-    (2  typ printer~to_hex)))
+  '((2  tci `(printer~to_hex))
+    (2  typ `(printer~to_hex))))
 
 (assert-size '+VLAN 4)
 
@@ -178,7 +178,7 @@
 (dm schema ()
   '((6  dst)
     (6  src)
-    (2  typ printer~to_hex)))
+    (2  typ `(printer~to_hex))))
 
 (assert-size '+Ethernet 14)
 

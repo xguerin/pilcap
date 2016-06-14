@@ -17,13 +17,13 @@
   (=: network   0))  # Data link type
 
 (dm schema ()
-  '((-4 magic     "0x" hex)
-    (-2 major     "0x" hex)
-    (-2 minor     "0x" hex)
-    (-4 thiszone  "0x" hex)
-    (-4 sigfigs   "0x" hex)
-    (-4 snaplen   "0x" hex)
-    (-4 network   "0x" hex)))
+  '((-4 magic     printer~to_hex)
+    (-2 major     printer~to_hex)
+    (-2 minor     printer~to_hex)
+    (-4 thiszone  printer~to_hex)
+    (-4 sigfigs   printer~to_hex)
+    (-4 snaplen   printer~to_hex)
+    (-4 network   printer~to_hex)))
 
 (dm nanores? ()
   (= (hex "0XA1B23C4D" (: _magic))))
@@ -49,10 +49,10 @@
   (=: orig_len 0))  # actual length of packet
 
 (dm schema ()
-  '((-4 ts_sec   "" format)
-    (-4 ts_nsec  "" format)
-    (-4 incl_len "" format)
-    (-4 orig_len "" format)))
+  '((-4 ts_sec  )
+    (-4 ts_nsec )
+    (-4 incl_len)
+    (-4 orig_len)))
 
 (dm len ()
   (: incl_len))
