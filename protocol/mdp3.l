@@ -45,7 +45,7 @@
 # Group header class
 ################################################################################
 
-(class +GroupHeader +Layer)
+(class +Group +Layer)
 
 (dm T ("ENTRY_CLASS")
   (=: entry_class "ENTRY_CLASS"))
@@ -54,7 +54,7 @@
   '((-2 blk_len)
     (-1 num_in_group)))
 
-(assert-size '+GroupHeader 3)
+(assert-size '+Group 3)
 
 (dm parse ("LENGTH" "APP")
   (let (rem (super "LENGTH" "APP"))
@@ -99,7 +99,7 @@
   (rd (- (: blk_len) (len This)))
   (let (rem (- "LENGTH" (: blk_len))
         typ (if (: entry_class) (list (: entry_class)) NIL)
-        nxt (new '(+GroupHeader) typ)
+        nxt (new '(+Group) typ)
         len (parse nxt rem "APP"))
     (=: next> nxt)
     len
@@ -257,7 +257,7 @@
 # Message header class
 ################################################################################
 
-(class +MessageHeader +Layer)
+(class +Message +Layer)
 
 (dm schema ()
   '((-2 msg_size)
@@ -267,7 +267,7 @@
     (-1 version)
     (-1 reserved)))
 
-(assert-size '+MessageHeader 10)
+(assert-size '+Message 10)
 
 (dm get_message_type ()
   (case (: template_id)
@@ -307,18 +307,18 @@
 # Packet header class
 ################################################################################
 
-(class +PacketHeader +Layer)
+(class +MDP3 +Layer)
 
 (dm schema ()
   '((-4  seqnum)
     (-8  timestamp)))
 
-(assert-size '+PacketHeader 12)
+(assert-size '+MDP3 12)
 
 (dm parse ("LENGTH" "APP")
   (let (rem (super "LENGTH" "APP"))
-    (while (>= rem (len '+MessageHeader))
-      (let (nxt (new '(+MessageHeader))
+    (while (>= rem (len '+Message))
+      (let (nxt (new '(+Message))
             len (parse nxt rem "APP"))
         (=: next> (append (: next>) (list nxt)))
         (setq rem len)
@@ -346,4 +346,4 @@
 # Entry point
 ################################################################################
 
-(de entrypoint () '(+PacketHeader))
+(de entrypoint () '(+MDP3))

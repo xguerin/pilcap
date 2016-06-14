@@ -16,7 +16,7 @@
       )))
 
 (de netstack-inspector ("LAYER" "ACC")
-  (let (nam (string~lower (netstack~ident "LAYER"))
+  (let (nam (netstack~ident "LAYER")
         sub (netstack~expand "LAYER")
         cns (cons nam sub)
         cln '((elt acc)
