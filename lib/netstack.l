@@ -11,9 +11,6 @@
 
 (class +Layer +Serializable)
 
-(dm ident ()
-  (pack (cdr (chop (name (car (type This)))))))
-
 (dm foldl ("FUN" "ACC")
   (let (acc ("FUN" "ACC" This))
     (if (: next>)
@@ -35,14 +32,15 @@
 (class +TCP +Layer)
 
 (dm schema ()
-  '((2  src)
-    (2  dst)
-    (4  seqnum)
-    (4  acknum)
-    (2  flags   `(printer~to_hex))
-    (2  winsize)
-    (2  chksum  `(printer~to_hex))
-    (2  urgptr  `(printer~to_hex))))
+  '((src      2)
+    (dst      2)
+    (seqnum   4)
+    (acknum   4)
+    (flags    2 `(printer~to_hex))
+    (winsize  2)
+    (chksum   2 `(printer~to_hex))
+    (urgptr   2 `(printer~to_hex))
+    ))
 
 (assert-size '+TCP 20)
 
@@ -67,10 +65,11 @@
 (class +UDP +Layer)
 
 (dm schema ()
-  '((2  src)
-    (2  dst)
-    (2  len)
-    (2  chksum `(printer~to_hex))))
+  '((src    2)
+    (dst    2)
+    (len    2)
+    (chksum 2 `(printer~to_hex))
+    ))
 
 (assert-size '+UDP 8)
 
@@ -98,15 +97,16 @@
 (class +IPv4 +Layer)
 
 (dm schema ()
-  '((2  flags)
-    (2  len)
-    (2  ident   `(printer~to_hex))
-    (2  frag    `(printer~to_hex))
-    (1  ttl)
-    (1  proto   `(printer~to_hex))
-    (2  chksum  `(printer~to_hex))
-    (4  src     netutils~ipv4)
-    (4  dst     netutils~ipv4)))
+  '((flags  2)
+    (len    2)
+    (ident  2 `(printer~to_hex))
+    (frag   2 `(printer~to_hex))
+    (ttl    1)
+    (proto  1 `(printer~to_hex))
+    (chksum 2 `(printer~to_hex))
+    (src    4 netutils~ipv4)
+    (dst    4 netutils~ipv4)
+    ))
 
 (assert-size '+IPv4 20)
 
@@ -148,8 +148,9 @@
 (class +VLAN +Layer)
 
 (dm schema ()
-  '((2  tci `(printer~to_hex))
-    (2  typ `(printer~to_hex))))
+  '((tci  2 `(printer~to_hex))
+    (typ  2 `(printer~to_hex))
+    ))
 
 (assert-size '+VLAN 4)
 
@@ -176,9 +177,10 @@
 (class +Ethernet +Layer)
 
 (dm schema ()
-  '((6  dst netutils~mac)
-    (6  src netutils~mac)
-    (2  typ `(printer~to_hex))))
+  '((dst  6 netutils~mac)
+    (src  6 netutils~mac)
+    (typ  2 `(printer~to_hex))
+    ))
 
 (assert-size '+Ethernet 14)
 

@@ -19,8 +19,9 @@
 (class +ChannelReset +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 ################################################################################
 # Security status class
@@ -29,15 +30,16 @@
 (class +SecurityStatus +Layer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-6 security_group)
-    (-6 asset_length)
-    (-4 security_id)
-    (-2 trade_date)
-    (-1 match_event_indicator)
-    (-1 security_trade_status)
-    (-1 halt_reason)
-    (-1 security_trade_event)))
+  '((transaction_time       -8)
+    (security_group         -6)
+    (asset_length           -6)
+    (security_id            -4)
+    (trade_date             -2)
+    (match_event_indicator  -1)
+    (security_trade_status  -1)
+    (halt_reason            -1)
+    (security_trade_event   -1)
+    ))
 
 (assert-size '+SecurityStatus 30)
 
@@ -51,8 +53,9 @@
   (=: entry_class "ENTRY_CLASS"))
 
 (dm schema ()
-  '((-2 blk_len)
-    (-1 num_in_group)))
+  '((blk_len      -2)
+    (num_in_group -1)
+    ))
 
 (assert-size '+Group 3)
 
@@ -129,8 +132,9 @@
 (class +RefreshVolume +GroupLayer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshVolume 9)
 
@@ -141,8 +145,9 @@
 (class +RefreshBook +GroupLayer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshBook 9)
 
@@ -153,8 +158,9 @@
 (class +RefreshTrade +GroupLayer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshTrade 9)
 
@@ -168,14 +174,14 @@
   (=: blk_len "BLK_LEN"))
 
 (dm schema ()
-  '((-8 entry_price NIL `(two_complement_reader 64))
-    (-4 entry_size NIL `(two_complement_reader 32))
-    (-4 security_id)
-    (-4 rpt_seq)
-    (-2 trading_ref_date)
-    (-1 settle_price_type)
-    (-1 update_action)
-    (-1 entry_type NIL char)))
+  '((entry_price        -8 NIL `(two_complement_reader 64))
+    (entry_size         -4 NIL `(two_complement_reader 32))
+    (security_id        -4)
+    (rpt_seq            -4)
+    (trading_ref_date   -2)
+    (settle_price_type  -1)
+    (update_action      -1)
+    (entry_type         -1 NIL char)))
 
 (assert-size '+RefreshDailyStatisticsEntry 25)
 
@@ -189,8 +195,9 @@
   (super "BLK_LEN" '+RefreshDailyStatisticsEntry))
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshDailyStatistics 9)
 
@@ -201,8 +208,9 @@
 (class +RefreshSessionStatistics +GroupLayer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshSessionStatistics 9)
 
@@ -213,8 +221,9 @@
 (class +RefreshLimitsBanding +GroupLayer)
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshLimitsBanding 9)
 
@@ -228,13 +237,14 @@
   (=: blk_len "BLK_LEN"))
 
 (dm schema ()
-  '((-8 entry_price)
-    (-4 entry_size)
-    (-4 security_id)
-    (-4 rpt_seq)
-    (-4 number_of_orders)
-    (-1 aggressor_side)
-    (-1 update_action)))
+  '((entry_price      -8)
+    (entry_size       -4)
+    (security_id      -4)
+    (rpt_seq          -4)
+    (number_of_orders -4)
+    (aggressor_side   -1)
+    (update_action    -1)
+    ))
 
 (assert-size '+RefreshTradeSummaryEntry 26)
 
@@ -248,8 +258,9 @@
   (super "BLK_LEN" '+RefreshTradeSummaryEntry))
 
 (dm schema ()
-  '((-8 transaction_time)
-    (-1 match_event_indicator)))
+  '((transaction_time       -8)
+    (match_event_indicator  -1)
+    ))
 
 (assert-size '+RefreshTradeSummary 9)
 
@@ -260,12 +271,13 @@
 (class +Message +Layer)
 
 (dm schema ()
-  '((-2 msg_size)
-    (-2 blk_len)
-    (-2 template_id)
-    (-2 schema_id)
-    (-1 version)
-    (-1 reserved)))
+  '((msg_size     -2)
+    (blk_len      -2)
+    (template_id  -2)
+    (schema_id    -2)
+    (version      -1)
+    (reserved     -1)
+    ))
 
 (assert-size '+Message 10)
 
@@ -310,8 +322,9 @@
 (class +MDP3 +Layer)
 
 (dm schema ()
-  '((-4  seqnum)
-    (-8  timestamp)))
+  '((seqnum     -4)
+    (timestamp  -8)
+    ))
 
 (assert-size '+MDP3 12)
 

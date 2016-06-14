@@ -17,16 +17,17 @@
   (=: network   0))  # Data link type
 
 (dm schema ()
-  '((-4 magic     printer~to_hex)
-    (-2 major     printer~to_hex)
-    (-2 minor     printer~to_hex)
-    (-4 thiszone  printer~to_hex)
-    (-4 sigfigs   printer~to_hex)
-    (-4 snaplen   printer~to_hex)
-    (-4 network   printer~to_hex)))
+  '((magic    -4  printer~to_hex)
+    (major    -2  printer~to_hex)
+    (minor    -2  printer~to_hex)
+    (thiszone -4  printer~to_hex)
+    (sigfigs  -4  printer~to_hex)
+    (snaplen  -4  printer~to_hex)
+    (network  -4  printer~to_hex)
+    ))
 
 (dm nanores? ()
-  (= (hex "0XA1B23C4D" (: _magic))))
+  (= (hex "A1B23C4D" (: _magic))))
 
 (dm valid? ()
   (and
@@ -37,6 +38,9 @@
         (and (: thiszone)
           (and (: minor)
             (and (: magic) (: major))))))))
+
+(dm build ("VALMAP")
+  (super "VALMAP"))
 
 # Packet header definition
 
@@ -49,10 +53,11 @@
   (=: orig_len 0))  # actual length of packet
 
 (dm schema ()
-  '((-4 ts_sec  )
-    (-4 ts_nsec )
-    (-4 incl_len)
-    (-4 orig_len)))
+  '((ts_sec   -4)
+    (ts_nsec  -4)
+    (incl_len -4)
+    (orig_len -4)
+    ))
 
 (dm len ()
   (: incl_len))
