@@ -2,21 +2,18 @@
 (local format-addr)
 
 (load "lib/lang.l")
+(load "lib/string.l")
 
 (de format-addr ("VAL" "LEN" "SEP" "FORMATTER" "PAD")
   (cond
     ((str? "VAL")
-     (let (tokz  '((s) (mapcar pack (split (chop s) "SEP")))
-           toks  (tokz "VAL")
+     (let (toks  ((string~splt "SEP") "VAL")
            nums  (mapcar "FORMATTER" toks)
            expn  '((acc vl) (>> (- (* 8 (length acc))) vl))
            shft  (lang~foldr '((x acc) (append (list (expn acc x)) acc)) nums ()))
        (lang~foldl '((acc x) (| acc x)) 0 shft)))
     ((num? "VAL")
-     (let (nums (make
-                  (for N "LEN"
-                    (let (qty (* 8 (- "LEN" N)))
-                      (link (>> qty (& "VAL" (>> (- qty) 255)))))))
+     (let (nums (lang~tobytes "LEN" "VAL")
            toks (mapcar '((n) (pad "PAD" ("FORMATTER" n))) nums))
        (glue "SEP" toks)))
     (T NIL)))

@@ -4,12 +4,26 @@
 (symbols 'netstack 'serializable)
 
 (load "lib/netutils.l")
+(load "lib/plugin.l")
 
 ###############################################################################
 # Layer class
 ###############################################################################
 
 (class +Layer +Serializable)
+
+(dm build ("VALMAP")
+  (let (srch '((elt)
+               (let ((dsc len NIL rdr)  elt
+                     mapent             (assoc (name dsc) "VALMAP")
+                     (k . v)            mapent)
+                 (default rdr lang~identity)
+                 (when mapent
+                   (put This dsc (rdr v))
+                   ))))
+    (lang~dolist srch (schema This))
+    (len This)
+    ))
 
 (dm foldl ("FUN" "ACC")
   (let (acc ("FUN" "ACC" This))
@@ -31,6 +45,16 @@
 
 (class +TCP +Layer)
 
+(dm T ()
+  (=: src     0)
+  (=: dst     0)
+  (=: seqnum  0)
+  (=: acknum  0)
+  (=: flags   0)
+  (=: winsize 0)
+  (=: chksum  0)
+  (=: urgptr  0))
+
 (dm schema ()
   '((src      2)
     (dst      2)
@@ -46,6 +70,19 @@
 
 (dm header_len ()
   (len This))
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (let (app     (assoc "app" "VALMAP")
+        (k . v) app)
+    (if app
+      (let (content (assoc v "VALMAP")
+            entrypt (plugin~pull v))
+        (=: next> (new entrypt))
+        (=: len (+ (build (: next>) content) (len This)))
+        (: len))
+      (len This)
+      )))
 
 (dm parse ("LENGTH" "APP")
   (super "LENGTH" "APP")
@@ -64,6 +101,12 @@
 
 (class +UDP +Layer)
 
+(dm T ()
+  (=: src     0)
+  (=: dst     0)
+  (=: len     0)
+  (=: chksum  0))
+
 (dm schema ()
   '((src    2)
     (dst    2)
@@ -78,6 +121,19 @@
 
 (dm data_len ()
   (- (: len) (header_len This)))
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (let (app     (assoc "app" "VALMAP")
+        (k . v) app)
+    (if app
+      (let (content (assoc v "VALMAP")
+            entrypt (plugin~pull v))
+        (=: next> (new entrypt))
+        (=: len (+ (build (: next>) content) (len This)))
+        (: len))
+      (len This)
+      )))
 
 (dm parse ("LENGTH" "APP")
   (super "LENGTH" "APP")
@@ -96,16 +152,27 @@
 
 (class +IPv4 +Layer)
 
+(dm T ()
+  (=: flags   (hex "4500"))
+  (=: len     0)
+  (=: ident   (hex "1FFA"))
+  (=: frag    (hex "4000"))
+  (=: ttl     24)
+  (=: proto   0)
+  (=: chksum  0)
+  (=: src     0)
+  (=: dst     0))
+
 (dm schema ()
-  '((flags  2)
+  '((flags  2 `(printer~to_hex))
     (len    2)
     (ident  2 `(printer~to_hex))
     (frag   2 `(printer~to_hex))
     (ttl    1)
     (proto  1 `(printer~to_hex))
     (chksum 2 `(printer~to_hex))
-    (src    4 netutils~ipv4)
-    (dst    4 netutils~ipv4)
+    (src    4 netutils~ipv4 netutils~ipv4)
+    (dst    4 netutils~ipv4 netutils~ipv4)
     ))
 
 (assert-size '+IPv4 20)
@@ -121,6 +188,26 @@
 
 (dm ipv ()
   (>> 4 (& (>> 8 (: flags)) 240)))
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (cond
+    ((assoc "TCP" "VALMAP")
+     (let (tcp (assoc "TCP" "VALMAP"))
+       (=: next> (new '(+TCP)))
+       (=: proto 6)
+       (=: len (+ (build (: next>) tcp) (len This)))
+       (: len)
+       ))
+    ((assoc "UDP" "VALMAP")
+     (let (udp (assoc "UDP" "VALMAP"))
+       (=: next> (new '(+UDP)))
+       (=: proto 17)
+       (=: len (+ (build (: next>) udp) (len This)))
+       (: len)
+       ))
+    (T (len This))
+    ))
 
 (dm get_content_type ()
   (case (: proto)
@@ -147,12 +234,34 @@
 
 (class +VLAN +Layer)
 
+(dm T ()
+  (=: tci 0)
+  (=: typ 0))
+
 (dm schema ()
   '((tci  2 `(printer~to_hex))
     (typ  2 `(printer~to_hex))
     ))
 
 (assert-size '+VLAN 4)
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (cond
+    ((assoc "IPv4" "VALMAP")
+     (let (ipv4 (assoc "IPv4" "VALMAP"))
+       (=: next> (new '(+IPv4)))
+       (=: typ (hex "0800"))
+       (+ (build (: next>) ipv4) (len This))
+       ))
+    ((assoc "VLAN" "VALMAP")
+     (let (vlan (assoc "VLAN" "VALMAP"))
+       (=: next> (new '(+VLAN)))
+       (=: typ (hex "8100"))
+       (+ (build (: next>) vlan) (len This))
+       ))
+    (T (len This))
+    ))
 
 (dm get_content_type ()
   (case (pad 4 (hex (: typ)))
@@ -176,13 +285,36 @@
 
 (class +Ethernet +Layer)
 
+(dm T ()
+  (=: dst 0)
+  (=: src 0)
+  (=: typ 0))
+
 (dm schema ()
-  '((dst  6 netutils~mac)
-    (src  6 netutils~mac)
+  '((dst  6 netutils~mac  netutils~mac)
+    (src  6 netutils~mac  netutils~mac)
     (typ  2 `(printer~to_hex))
     ))
 
 (assert-size '+Ethernet 14)
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (cond
+    ((assoc "IPv4" "VALMAP")
+     (let (ipv4 (assoc "IPv4" "VALMAP"))
+       (=: next> (new '(+IPv4)))
+       (=: typ (hex "0800"))
+       (+ (build (: next>) ipv4) (len This))
+       ))
+    ((assoc "VLAN" "VALMAP")
+     (let (vlan (assoc "VLAN" "VALMAP"))
+       (=: next> (new '(+VLAN)))
+       (=: typ (hex "8100"))
+       (+ (build (: next>) vlan) (len This))
+       ))
+    (T (len This))
+    ))
 
 (dm get_content_type ()
   (case (pad 4 (hex (: typ)))

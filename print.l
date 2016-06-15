@@ -1,8 +1,9 @@
 #!/usr/bin/env pil
 
 (load "lib/serializable.l")
-(load "lib/pcap.l")
 (load "lib/netstack.l")
+(load "lib/pcap.l")
+(load "lib/plugin.l")
 
 # Helper functions
 
@@ -32,8 +33,7 @@
 
 (de protocol ()
   (let (proto (name (opt)))
-    (load (pack "protocol/" proto ".l"))
-    (setq *protocol* ((car (str (pack proto "~entrypoint")))))
+    (setq *protocol* (plugin~pull proto))
     ))
 
 (load T)

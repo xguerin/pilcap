@@ -8,13 +8,13 @@
 (class +GlobalHeader +Serializable)
 
 (dm T ()
-  (=: magic     0)
-  (=: major     0)
-  (=: minor     0)
-  (=: thiszone  0)   # GMT to local correction
-  (=: sigfigs   0)   # Accuracy of timestamps
-  (=: snaplen   0)   # Max length of captured packets, in octets
-  (=: network   0))  # Data link type
+  (=: magic     (hex "A1B23C4D"))
+  (=: major     2)
+  (=: minor     4)
+  (=: thiszone  0)      # GMT to local correction
+  (=: sigfigs   0)      # Accuracy of timestamps
+  (=: snaplen   65535)  # Max length of captured packets, in octets
+  (=: network   1))     # Data link type, default ethernet (1)
 
 (dm schema ()
   '((magic    -4  printer~to_hex)
@@ -38,9 +38,6 @@
         (and (: thiszone)
           (and (: minor)
             (and (: magic) (: major))))))))
-
-(dm build ("VALMAP")
-  (super "VALMAP"))
 
 # Packet header definition
 

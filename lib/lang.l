@@ -32,7 +32,7 @@
 (de tobytes ("LEN" "DAT")
   (if (=0 "LEN")
     NIL
-    (cons (& "DAT" 255) (tobytes (dec "LEN") (>> 8 "DAT")))
+    (conc (tobytes (dec "LEN") (>> 8 "DAT")) (list (& "DAT" 255)))
     ))
 
 #
@@ -48,7 +48,7 @@
   (let ("WRITE" '((e)
                   (let ((len dat) e
                         blst (tobytes (abs len) dat)
-                        ilst (if (> len 0) (reverse blst) blst))
+                        ilst (if (< len 0) (reverse blst) blst))
                         (dolist '((e) (wr e)) ilst)
                   )))
     (while (args) ("WRITE" (next)))

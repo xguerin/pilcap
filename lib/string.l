@@ -21,3 +21,8 @@
                   c)))
             (chop "STR"))
       )))
+
+(de splt (@SEP "STR")
+  (curry (@SEP) ("STR")
+    (mapcar pack (split (chop "STR") @SEP))
+    ))

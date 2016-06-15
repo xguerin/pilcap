@@ -20,15 +20,6 @@
 (dm ident ()
   (pack (cdr (chop (name (car (type This)))))))
 
-(dm build ("VALMAP")
-  (let (srch '((elt)
-               (let ((k v) elt)
-                 (when (assoc k (schema This))
-                   (put This dsc (rdr v))
-                   ))))
-    (lang~dolist srch "VALMAP")
-    ))
-
 (dm display ()
   (let (writer  '((elt)
                   (let ((dsc len wtr NIL) elt

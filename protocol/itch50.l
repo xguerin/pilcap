@@ -363,9 +363,9 @@
     rem
     ))
 
-# UFO class
+# ITCH50 class
 
-(class +UFO +Layer)
+(class +ITCH50 +Layer)
 
 (dm schema ()
   '((session  10)
@@ -402,4 +402,4 @@
 
 # Entry point
 
-(de entrypoint () '(+UFO))
+(de entrypoint () '(+ITCH50))
