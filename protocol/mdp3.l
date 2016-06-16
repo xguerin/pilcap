@@ -80,7 +80,7 @@
                     nxt))
                 "VALMAP"
                 ))
-    sublen
+    (+ sublen (len This))
     ))
 
 (dm parse ("LENGTH" "APP")
@@ -149,6 +149,10 @@
 
 (dm T ("BLK_LEN")
   (=: blk_len "BLK_LEN"))
+
+(dm build ("VALMAP")
+  (super "VALMAP")
+  (: blk_len))
 
 (dm parse ("LENGTH" "APP")
   (let (rem (super "LENGTH" "APP")
