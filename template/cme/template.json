@@ -1,0 +1,169 @@
+{
+  "0": {
+    "src": "10:0E:7E:E2:1D:87",
+    "dst": "01:00:5E:00:20:82",
+    "VLAN": {
+      "IPv4": {
+        "src": "205.209.212.078",
+        "dst": "224.000.032.130",
+        "UDP": {
+          "src": 15382,
+          "dst": 15382,
+          "MDP3": {
+            "seqnum": 1,
+            "timestamp": 0,
+            "entries": [ {
+              "RefreshTradeSummary": {
+                "transaction_time": 0,
+                "match_event_indicator": 0,
+                "entries": [ {
+                  "entry_price": 250000000,
+                  "entry_size": 100,
+                  "security_id": 6505,
+                  "aggressor_side": 1
+                }, {
+                "entry_price": 260000000,
+                "entry_size": 200,
+                "security_id": 6505,
+                "aggressor_side": 2
+                },
+                {
+                  "entry_price": 240000000,
+                  "entry_size": 100,
+                  "security_id": 6505,
+                  "aggressor_side": 1
+                } ]
+              }
+            } ]
+          }
+        }
+      }
+    }
+  },
+  "1000": {
+    "src": "10:0E:7E:E2:1D:87",
+    "dst": "01:00:5E:00:20:82",
+    "VLAN": {
+      "IPv4": {
+        "src": "205.209.212.078",
+        "dst": "224.000.032.130",
+        "UDP": {
+          "src": 15382,
+          "dst": 15382,
+          "MDP3": {
+            "seqnum": 2,
+            "timestamp": 1000,
+            "entries": [ {
+              "RefreshTradeSummary": {
+                "transaction_time": 1000,
+                "match_event_indicator": 0,
+                "entries": [ {
+                  "entry_price": 250000000,
+                  "entry_size": 300,
+                  "security_id": 6505,
+                  "aggressor_side": 1
+                } ]
+              }
+            } ]
+          }
+        }
+      }
+    }
+  },
+  "5000": {
+    "dst": "01:00:5E:00:20:82",
+    "src": "10:0E:7E:E2:1D:87",
+    "VLAN": {
+      "IPv4": {
+        "src": "205.209.212.078",
+        "dst": "224.000.032.130",
+        "UDP": {
+          "src": 15382,
+          "dst": 15382,
+          "MDP3": {
+            "seqnum": 3,
+            "timestamp": 5000,
+            "entries": [ {
+              "RefreshTradeSummary": {
+                "transaction_time": 5000,
+                "match_event_indicator": 0,
+                "entries": [ {
+                  "entry_price": 50000000000,
+                  "entry_size": 100,
+                  "security_id": 6505,
+                  "aggressor_side": 2
+                },
+                {
+                  "entry_price": 280000000,
+                  "entry_size": 40,
+                  "security_id": 6505,
+                  "aggressor_side": 2
+                } ]
+              }
+            } ]
+          }
+        }
+      }
+    }
+  },
+  "100000": {
+    "dst": "01:00:5E:00:20:82",
+    "src": "10:0E:7E:E2:1D:87",
+    "VLAN": {
+      "IPv4": {
+        "src": "205.209.212.078",
+        "dst": "224.000.032.130",
+        "UDP": {
+          "src": 15382,
+          "dst": 15382,
+          "MDP3": {
+            "seqnum": 4,
+            "timestamp": 100000,
+            "entries": [ {
+              "RefreshTradeSummary": {
+                "transaction_time": 100000,
+                "match_event_indicator": 0,
+                "entries": [ {
+                  "entry_price": 300000000,
+                  "entry_size": 150,
+                  "security_id": 6505,
+                  "aggressor_side": 1
+                } ]
+              }
+            } ]
+          }
+        }
+      }
+    }
+  },
+  "200000": {
+    "dst": "01:00:5E:00:20:82",
+    "src": "10:0E:7E:E2:1D:87",
+    "VLAN": {
+      "IPv4": {
+        "src": "205.209.212.078",
+        "dst": "224.000.032.130",
+        "UDP": {
+          "src": 15382,
+          "dst": 15382,
+          "MDP3": {
+            "seqnum": 5,
+            "timestamp": 200000,
+            "entries": [ {
+              "RefreshTradeSummary": {
+                "transaction_time": 200000,
+                "match_event_indicator": 0,
+                "entries": [ {
+                  "entry_price": 5000,
+                  "entry_size": 60,
+                  "security_id": 6505,
+                  "aggressor_side": 1
+                } ]
+              }
+            } ]
+          }
+        }
+      }
+    }
+  }
+}
