@@ -4,12 +4,32 @@
 # Utilities
 ################################################################################
 
-(de two_complement_reader (@BITS "VALUE")
+(de nullable_value_reader (@BITS)
   (curry (@BITS) ("VALUE")
-    (cond
-      ((= "VALUE" (- (** 2 (- @BITS 1)) 1)) 0)
-      ((> "VALUE" (- (** 2 (- @BITS 1)) 1)) (- "VALUE" (** 2 @BITS)))
-      (T "VALUE")
+    (if (= "VALUE" (- (** 2 (- @BITS 1)) 1))
+      0
+      "VALUE"
+      )))
+
+(de two_complement_reader (@BITS)
+  (curry (@BITS) ("VALUE")
+    (if (> "VALUE" (- (** 2 (- @BITS 1)) 1))
+      (- "VALUE" (** 2 @BITS))
+      "VALUE"
+      )))
+
+(de nullable_value_writer (@BITS)
+  (curry (@BITS) ("VALUE")
+    (if (=0 "VALUE")
+      (- (** 2 (- @BITS 1)) 1)
+      "VALUE"
+      )))
+
+(de two_complement_writer (@BITS)
+  (curry (@BITS) ("VALUE")
+    (if (< "VALUE" 0)
+      (+ "VALUE" (** 2 @BITS))
+      "VALUE"
       )))
 
 ################################################################################
@@ -121,6 +141,9 @@
   (=: blk_len "BLK_LEN")
   (=: entry_class "ENTRY_CLASS"))
 
+(dm padding ()
+  (- (: blk_len) (len This)))
+
 (dm build ("VALMAP")
   (super "VALMAP")
   (let (typ     (if (: entry_class) (list (: entry_class)) NIL)
@@ -149,6 +172,9 @@
 
 (dm T ("BLK_LEN")
   (=: blk_len "BLK_LEN"))
+
+(dm padding ()
+  (- (: blk_len) (len This)))
 
 (dm build ("VALMAP")
   (super "VALMAP")
@@ -211,8 +237,14 @@
   (=: blk_len "BLK_LEN"))
 
 (dm schema ()
-  '((entry_price        -8 NIL `(two_complement_reader 64))
-    (entry_size         -4 NIL `(two_complement_reader 32))
+  '((entry_price        -8
+                        `(lang~compose '(two_complement_writer 64)
+                                       '(nullable_value_writer 64))
+                        `(lang~compose '(two_complement_reader 64)
+                                       '(nullable_value_reader 64)))
+    (entry_size         -4 
+                        `(two_complement_writer 32)
+                        `(two_complement_reader 32))
     (security_id        -4)
     (rpt_seq            -4)
     (trading_ref_date   -2)
@@ -281,8 +313,14 @@
   (=: blk_len           "BLK_LEN"))
 
 (dm schema ()
-  '((entry_price      -8)
-    (entry_size       -4)
+  '((entry_price      -8
+                      `(lang~compose '(two_complement_writer 64)
+                                     '(nullable_value_writer 64))
+                      `(lang~compose '(two_complement_reader 64)
+                                     '(nullable_value_reader 64)))
+    (entry_size       -4 
+                      `(two_complement_writer 32)
+                      `(two_complement_reader 32))
     (security_id      -4)
     (rpt_seq          -4)
     (number_of_orders -4)

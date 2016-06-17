@@ -40,6 +40,11 @@
 
 (de identity ("VALUE") "VALUE")
 
+(de compose (@F @G)
+  (curry (@F @G) ("VAR")
+    (@F (@G "VAR"))
+    ))
+
 #
 # I/O operations
 #
@@ -49,7 +54,8 @@
                   (let ((len dat) e
                         blst (tobytes (abs len) dat)
                         ilst (if (< len 0) (reverse blst) blst))
-                        (dolist '((e) (wr e)) ilst)
+                    (dolist '((e) (wr e)) ilst)
+                    # (print dat ilst) (prinl)
                   )))
     (while (args) ("WRITE" (next)))
     ))

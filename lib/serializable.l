@@ -22,18 +22,18 @@
 
 (dm display ()
   (let (writer  '((elt)
-                  (let ((dsc len wtr NIL) elt
+                  (let ((dsc len NIL NIL) elt
                         nam               (name dsc))
-                    (default wtr lang~identity)
-                    (prinl "| " (align -22 nam) " : " (wtr (get This dsc)))
+                    (prinl "| " (align -22 nam) " : " (get This dsc))
                     )))
     (lang~dolist writer (schema This))
     ))
 
 (dm dump ()
   (let (getter '((elt)
-                 (let ((dsc len NIL NIL) elt)
-                   (lang~nwr (list len (get This dsc)))
+                 (let ((dsc len wtr NIL) elt)
+                   (default wtr lang~identity)
+                   (lang~nwr (list len (wtr (get This dsc))))
                    )))
     (lang~dolist getter (schema This))
     This

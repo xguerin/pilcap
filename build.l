@@ -2,8 +2,8 @@
 
 (load "@lib/json.l")
 (load "lib/serializable.l")
-(load "lib/pcap.l")
 (load "lib/netstack.l")
+(load "lib/pcap.l")
 (load "lib/lang.l")
 
 ################################################################################
@@ -15,15 +15,18 @@
   (netstack~display "LAYER")
   "ACC")
 
-(de build ("VALMAP")
+(de build ("VALMAP" "OUTPUT")
   (let (builder '((elt)
-                  (let (ts    (car elt)
+                  (let (ts    (car (str (car elt)))
                         obj   (cdr elt)
-                        layer (new '(netstack~+Ethernet)))
-                    (netstack~build layer obj)
+                        layer (new '(netstack~+Ethernet))
+                        len   (netstack~build layer obj)
+                        phdr  (new '(pcap~+PacketHeader) T ts len))
                     (netstack~foldl layer _inspector NIL)
-                    (prinl "|------------------------|")
-                    )))
+                    (out (pack "+" "OUTPUT")
+                      (pcap~dump phdr)
+                      (netstack~dump layer)
+                      ))))
     (lang~dolist builder "VALMAP")
     ))
 
@@ -51,9 +54,11 @@
   (in *template*
     (let (json (readJson))
       (if (lst? json)
-        (build json)
-        (quit (pack "Invalid JSON file: " *template*))
-        )))
+        (let (ghdr (new '(pcap~+GlobalHeader)))
+          (out *output* (pcap~dump ghdr))
+            (build json *output*))
+          (quit (pack "Invalid JSON file: " *template*))
+          )))
   (prinl "USAGE: build.l -template TEMPLATE.json -output OUTPUT.pcap"))
 
 ################################################################################

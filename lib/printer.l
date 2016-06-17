@@ -4,7 +4,7 @@
   (default @PADDING 0)
   (curry (@PADDING) ("VALUE")
     (when (num? "VALUE")
-      (pack "0x" (pad @PADDING (hex "VALUE")))
+      (pad @PADDING (hex "VALUE"))
       )))
 
 (de to_dec (@POINT "VALUE")

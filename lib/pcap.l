@@ -8,7 +8,7 @@
 (class +GlobalHeader +Serializable)
 
 (dm T ()
-  (=: magic     (hex "A1B23C4D"))
+  (=: magic     "A1B23C4D")
   (=: major     2)
   (=: minor     4)
   (=: thiszone  0)      # GMT to local correction
@@ -17,22 +17,22 @@
   (=: network   1))     # Data link type, default ethernet (1)
 
 (dm schema ()
-  '((magic    -4  printer~to_hex)
-    (major    -2  printer~to_hex)
-    (minor    -2  printer~to_hex)
-    (thiszone -4  printer~to_hex)
-    (sigfigs  -4  printer~to_hex)
-    (snaplen  -4  printer~to_hex)
-    (network  -4  printer~to_hex)
+  '((magic    -4  hex hex)
+    (major    -2)
+    (minor    -2)
+    (thiszone -4)
+    (sigfigs  -4)
+    (snaplen  -4)
+    (network  -4)
     ))
 
 (dm nanores? ()
-  (= (hex "A1B23C4D" (: _magic))))
+  (= "A1B23C4D" (: _magic)))
 
 (dm valid? ()
   (and
-    (or (= (hex (: magic)) "A1B2C3D4")
-      (= (hex (: magic)) "A1B23C4D"))
+    (or (= (: magic) "A1B2C3D4")
+      (= (: magic) "A1B23C4D"))
     (and (: snaplen)
       (and (: sigfigs)
         (and (: thiszone)
@@ -43,11 +43,19 @@
 
 (class +PacketHeader +Serializable)
 
-(dm T ()
-  (=: ts_sec   0)   # timestamp seconds
-  (=: ts_nsec  0)   # timestamp microseconds
-  (=: incl_len 0)   # number of octets of packet saved in file
-  (=: orig_len 0))  # actual length of packet
+(dm T ("NS" "TS" "ILEN" "OLEN")
+  (default
+    "TS"    0
+    "OLEN" "ILEN")
+  (let (s   (/ "TS" 1000000000)
+        ns  (- "TS" (* s 1000000000))
+        us  (/ nsec 1000)
+        v   (if "NS" ns us))
+    (=: ts_sec   s)       # timestamp seconds
+    (=: ts_nsec  v)       # timestamp microseconds
+    (=: incl_len "ILEN")  # number of octets of packet saved in file
+    (=: orig_len "OLEN")  # actual length of packet
+    ))
 
 (dm schema ()
   '((ts_sec   -4)
@@ -80,6 +88,7 @@
           cont  NIL
           acc   "ACC")
       (parse GHDR)
+      (display GHDR)
       (when (valid? GHDR)
         (parse PHDR)
         (setq cont (valid? PHDR))
