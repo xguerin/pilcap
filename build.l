@@ -15,14 +15,15 @@
   (netstack~display "LAYER")
   "ACC")
 
-(de build ("VALMAP" "OUTPUT")
+(de build ("VALMAP" "OUTPUT" "VERBOSE")
   (let (builder '((elt)
                   (let (ts    (car (str (car elt)))
                         obj   (cdr elt)
                         layer (new '(netstack~+Ethernet))
                         len   (netstack~build layer obj)
                         phdr  (new '(pcap~+PacketHeader) T ts len))
-                    (netstack~foldl layer _inspector NIL)
+                    (when "VERBOSE"
+                      (netstack~foldl layer _inspector NIL))
                     (out (pack "+" "OUTPUT")
                       (pcap~dump phdr)
                       (netstack~dump layer)
@@ -34,9 +35,10 @@
 # Global variables
 ################################################################################
 
-(setq *pcapfile*  NIL)
-(setq *protocol*  NIL)
-(setq *output*    NIL)
+(def '*pcapfile*  NIL)
+(def '*protocol*  NIL)
+(def '*output*    NIL)
+(def '*verbose*   NIL)
 
 ################################################################################
 # Main
@@ -48,6 +50,9 @@
 (de output ()
   (setq *output* (name (opt))))
 
+(de verbose ()
+  (setq *verbose* T))
+
 (load T)
 
 (if (and *template* *output*)
@@ -56,7 +61,7 @@
       (if (lst? json)
         (let (ghdr (new '(pcap~+GlobalHeader)))
           (out *output* (pcap~dump ghdr))
-            (build json *output*))
+            (build json *output* *verbose*))
           (quit (pack "Invalid JSON file: " *template*))
           )))
   (prinl "USAGE: build.l -template TEMPLATE.json -output OUTPUT.pcap"))
