@@ -325,20 +325,35 @@
     (T (len This))
     ))
 
-(dm get_content_type ()
-  (case (: typ)
-    ("0800" '(+IPv4))
-    ("8100" '(+VLAN))
-    (T    NIL)
+(dm get_content_type ("APP")
+  (if (> (hex (: typ)) 1536)
+    (case (: typ)
+      ("0800" '(+IPv4))
+      ("8100" '(+VLAN))
+      (T      NIL))
+    "APP"
+    ))
+
+(dm get_content_len ("LENGTH")
+  (if (> (hex (: typ)) 1536)
+    "LENGTH"
+    (hex (: typ))
+    ))
+
+(dm get_content_rem ("LENGTH" "REM")
+  (if (> (hex (: typ)) 1536)
+    "REM"
+    (- "LENGTH" (- (hex (: typ)) "REM"))
     ))
 
 (dm parse ("LENGTH" "APP")
   (let (rem     (super "LENGTH" "APP")
-        content (get_content_type This))
+        res     rem
+        content (get_content_type This "APP"))
     (when content
       (=: next> (new content))
-      (setq rem (parse (: next>) rem "APP")))
-    rem
+      (setq res (parse (: next>) (get_content_len This rem) "APP")))
+    (get_content_rem This rem res)
     ))
 
 ###############################################################################
