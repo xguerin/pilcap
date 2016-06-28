@@ -3,24 +3,6 @@
 (load "lib/lang.l")
 
 ################################################################################
-# Utilities
-################################################################################
-
-(de two_complement_reader (@BITS)
-  (curry (@BITS) ("VALUE")
-    (if (> "VALUE" (- (** 2 (- @BITS 1)) 1))
-      (- "VALUE" (** 2 @BITS))
-      "VALUE"
-      )))
-
-(de two_complement_writer (@BITS)
-  (curry (@BITS) ("VALUE")
-    (if (< "VALUE" 0)
-      (+ "VALUE" (** 2 @BITS))
-      "VALUE"
-      )))
-
-################################################################################
 # Bit layer class
 ################################################################################
 
@@ -93,7 +75,7 @@
   '((typ   3)
     (sid   1)
     (siz  12)
-    (dlt   4  `(two_complement_writer 4)  `(two_complement_reader 4))
+    (dlt   4)
     (swp   1)
     ))
 
@@ -108,7 +90,7 @@
     (sid   1)
     (cnt   3)
     (siz  12)
-    (dlt  12  `(two_complement_writer 12) `(two_complement_reader 12))
+    (dlt  12)
     (swp   1)
     ))
 
